@@ -8,7 +8,16 @@
 .container {
   flex: 1;
   padding: 20px;
-  background: #fff;
+  background-color: #fff;
+  border-radius: 4px;
+}
+
+/* 表格搜索区样式 */
+.table-search {
+  padding: 16px;
+  background-color: #fff;
+  border-radius: 4px;
+  margin-bottom: 10px;
 }
 
 /* Element Plus 组件样式覆盖 */
@@ -36,21 +45,19 @@
 }
 
 /* Dialog 表单样式 */
-.el-dialog {
-  .el-select,
-  .el-input,
-  .el-textarea {
-    width: 90%;
-  }
+.el-dialog .el-select,
+.el-dialog .el-input,
+.el-dialog .el-textarea {
+  width: 90%;
+}
 
-  .el-textarea__inner {
-    min-height: 100px;
-  }
+.el-dialog .el-textarea__inner {
+  min-height: 100px;
 }
 
 /* 搜索表单样式 */
 .search-container {
-  padding: 20px 30px 0;
+  padding: 15px 30px 10px 30px;
   background-color: #fff;
   margin-bottom: 10px;
   border: 1px solid #ddd;
@@ -77,14 +84,6 @@
 
 .search-container .button-group {
   margin-left: auto;
-}
-
-/* 按钮组 */
-.button-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
 }
 
 /* 表格操作按钮 */

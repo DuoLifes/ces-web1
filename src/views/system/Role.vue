@@ -166,7 +166,7 @@ const getData = async (): Promise<void> => {
 
     const res = await fetchRoleData(params)
 
-    if (res.code === '0') {
+    if (res.code === '00000') {
       tableData.value = res.data.records || []
       page.total = res.data.total || 0
     } else {
@@ -239,7 +239,7 @@ const handleEdit = (row: Role): void => {
 const handleDelete = async (row: Role): Promise<void> => {
   try {
     const res = await deleteRole(row.id)
-    if (res.code === '0') {
+    if (res.code === '00000') {
       ElMessage.success('删除成功')
       await getData()
     } else {
@@ -265,7 +265,7 @@ const handleUpdate = async (formData: Partial<Role>): Promise<void> => {
         description: formData.description || '',
       })
 
-      if (res.code === '0') {
+      if (res.code === '00000') {
         ElMessage.success('添加成功')
         closeDialog()
         getData()
@@ -280,7 +280,7 @@ const handleUpdate = async (formData: Partial<Role>): Promise<void> => {
         description: formData.description || '',
       })
 
-      if (res.code === '0') {
+      if (res.code === '00000') {
         ElMessage.success('更新成功')
         closeDialog()
         getData()
@@ -305,24 +305,8 @@ getData()
 </script>
 
 <style scoped>
-.page-container {
-  padding: 20px;
-}
-
-.table-search {
-  padding: 16px;
-  background-color: #fff;
-  border-radius: 4px;
-  margin-bottom: 10px;
-}
-
 /* 角色管理特有的查询条件样式 */
 .role-search :deep(.el-form-item__content) {
   max-width: 280px;
-}
-
-.container {
-  background-color: #fff;
-  border-radius: 4px;
 }
 </style>

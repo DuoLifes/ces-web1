@@ -346,14 +346,6 @@ getData()
 </script>
 
 <style scoped>
-/* 页面特有样式 */
-.table-search {
-  padding: 16px;
-  background-color: #fff;
-  border-radius: 4px;
-  margin-bottom: 10px;
-}
-
 /* 局点管理特有的查询条件样式 */
 .company-search :deep(.el-form-item__content) {
   max-width: 280px;
