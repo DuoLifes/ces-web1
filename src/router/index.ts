@@ -64,24 +64,24 @@ const publicRoutes: RouteRecordRaw[] = [
         },
         component: () => import('../views/system/Community.vue'),
       },
-      // {
-      //   path: 'marketing-group',
-      //   name: 'marketingGroup',
-      //   meta: {
-      //     title: '营销组管理',
-      //     permiss: '1_4',
-      //   },
-      //   component: () => import('../views/system/MarketingGroup.vue'),
-      // },
-      // {
-      //   path: 'role',
-      //   name: 'role',
-      //   meta: {
-      //     title: '角色管理',
-      //     permiss: '1_5',
-      //   },
-      //   component: () => import('../views/system/Role.vue'),
-      // },
+      {
+        path: 'marketing-group',
+        name: 'marketingGroup',
+        meta: {
+          title: '营销组管理',
+          permiss: '1_4',
+        },
+        component: () => import('../views/system/MarketingGroup.vue'),
+      },
+      {
+        path: 'role',
+        name: 'role',
+        meta: {
+          title: '角色管理',
+          permiss: '1_5',
+        },
+        component: () => import('../views/system/Role.vue'),
+      },
       // {
       //   path: 'account',
       //   name: 'account',
