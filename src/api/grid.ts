@@ -30,6 +30,16 @@ interface ApiResponse<T> {
 }
 
 /**
+ * 简单网格项数据接口，用于下拉选择器
+ */
+interface GridItem {
+  /** 网格ID */
+  id: number
+  /** 网格名称 */
+  name: string
+}
+
+/**
  * 获取网格列表数据
  * @param params - 查询参数，包含运营商ID、局点ID、网格名称和分页信息
  * @returns Promise<ApiResponse<PageResult<Grid>>> - 返回网格列表和总数
@@ -39,6 +49,19 @@ export const fetchGridData = (params: GridQuery): Promise<ApiResponse<PageResult
     url: '/ces/grid/list/page',
     method: 'post',
     data: params,
+  })
+}
+
+/**
+ * 根据局点ID获取网格列表（不分页）
+ * @param companyId - 局点ID
+ * @returns Promise<ApiResponse<GridItem[]>> - 返回网格列表
+ */
+export const fetchGridListByCompany = (companyId: number): Promise<ApiResponse<GridItem[]>> => {
+  return request({
+    url: '/ces/grid/list',
+    method: 'post',
+    data: { companyId },
   })
 }
 
@@ -79,7 +102,7 @@ export const updateGrid = (data: {
  */
 export const deleteGrid = (id: number): Promise<ApiResponse<null>> => {
   return request({
-    url: `/ces/grid/delete/${id}`,
+    url: `/ces/grid/delete?id=${id}`,
     method: 'delete',
   })
 }

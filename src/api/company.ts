@@ -91,7 +91,7 @@ export const updateCompany = (data: Partial<Company>): Promise<ApiResponse<Compa
  */
 export const deleteCompany = (id: number): Promise<ApiResponse<null>> => {
   return request({
-    url: `/ces/company/delete/${id}`,
+    url: `/ces/company/delete?id=${id}`,
     method: 'delete',
   })
 }

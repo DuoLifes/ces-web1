@@ -55,15 +55,15 @@ const publicRoutes: RouteRecordRaw[] = [
         },
         component: () => import('../views/system/Grid.vue'),
       },
-      // {
-      //   path: 'community',
-      //   name: 'community',
-      //   meta: {
-      //     title: '小区管理',
-      //     permiss: '1_3',
-      //   },
-      //   component: () => import('../views/system/Community.vue'),
-      // },
+      {
+        path: 'community',
+        name: 'community',
+        meta: {
+          title: '小区管理',
+          permiss: '1_3',
+        },
+        component: () => import('../views/system/Community.vue'),
+      },
       // {
       //   path: 'marketing-group',
       //   name: 'marketingGroup',
