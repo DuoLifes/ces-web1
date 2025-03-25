@@ -26,21 +26,42 @@
         :changePage="changePage"
         :sizeChange="handleSizeChange"
         :operateFunc="handleOperate"
-        :delFunc="handleDelete"
         :showView="false"
         :showEdit="false"
-        :showDelete="true"
+        :showDelete="false"
         :loading="loading"
         :max-height="650"
         title="标签列表"
         @addOperate="handleAdd"
       >
-        <template #operate="{ row }">
+        <template #operator="{ rows }">
           <div class="operate-btns">
-            <el-button type="primary" plain size="small" @click="handleEdit(row)"> 编辑 </el-button>
-            <el-button type="warning" plain size="small" @click="handleConfigure(row)">
+            <!-- 编辑按钮 -->
+            <el-button class="light-blue-btn" size="small" :icon="Edit" @click="handleEdit(rows)">
+              编辑
+            </el-button>
+
+            <!-- 配置局点按钮 -->
+            <el-button
+              class="light-blue-btn"
+              size="small"
+              :icon="Setting"
+              @click="handleConfigure(rows)"
+            >
               配置局点
             </el-button>
+
+            <!-- 删除按钮 -->
+            <el-popconfirm
+              title="确认要删除此条数据吗？"
+              confirm-button-text="确定"
+              cancel-button-text="取消"
+              @confirm="handleDelete(rows)"
+            >
+              <template #reference>
+                <el-button class="light-red-btn" size="small" :icon="Delete">删除</el-button>
+              </template>
+            </el-popconfirm>
           </div>
         </template>
       </TableCustom>
@@ -55,6 +76,7 @@ import { ElMessage } from 'element-plus'
 import type { Tag } from '@/types/tag'
 import { fetchTagData, deleteTag } from '@/api/tag'
 import type { Component } from 'vue'
+import { Setting, Edit, Delete } from '@element-plus/icons-vue'
 
 // 导入组件
 import TableCustom from '@/components/common/table-custom.vue'
@@ -139,7 +161,7 @@ const columns = ref([
   { prop: 'name', label: '标签名称' },
   { prop: 'typeValue', label: '标签类别' },
   { prop: 'companyNames', label: '关联局点' },
-  { prop: 'operator', label: '操作', width: 250, slotName: 'operate' },
+  { prop: 'operator', label: '操作', width: 280 },
 ])
 
 // 获取表格数据
@@ -240,6 +262,7 @@ const handleConfigure = (row: Tag): void => {
 }
 
 // 操作按钮
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
 const handleOperate = (row: any) => {
   // 这个函数存在是为了满足tableCustom组件的要求，但我们使用的是自定义的操作按钮模板
 }
