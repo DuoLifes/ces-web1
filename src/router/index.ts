@@ -131,45 +131,45 @@ const publicRoutes: RouteRecordRaw[] = [
       //   },
       //   component: () => import('../views/system/account/ConfigAccountMarketingGroup.vue'),
       // },
-      // {
-      //   path: 'tag',
-      //   name: 'tag',
-      //   meta: {
-      //     title: '标签管理',
-      //     permiss: '1_7',
-      //   },
-      //   component: () => import('../views/system/tag/Tag.vue'),
-      // },
-      // {
-      //   path: 'addTag',
-      //   name: 'addTag',
-      //   meta: {
-      //     title: '新建标签',
-      //     permiss: '1_7_1',
-      //     parentPath: '/tag',
-      //   },
-      //   component: () => import('../views/system/tag/AddTag.vue'),
-      // },
-      // {
-      //   path: 'editTag/:id',
-      //   name: 'editTag',
-      //   meta: {
-      //     title: '编辑标签',
-      //     permiss: '1_7_2',
-      //     parentPath: '/tag',
-      //   },
-      //   component: () => import('../views/system/tag/EditTag.vue'),
-      // },
-      // {
-      //   path: 'configTagCompany/:id',
-      //   name: 'configTagCompany',
-      //   meta: {
-      //     title: '局点配置',
-      //     permiss: '1_7_3',
-      //     parentPath: '/tag',
-      //   },
-      //   component: () => import('../views/system/tag/ConfigTagCompany.vue'),
-      // },
+      {
+        path: 'tag',
+        name: 'tag',
+        meta: {
+          title: '标签管理',
+          permiss: '1_7',
+        },
+        component: () => import('../views/system/tag/Tag.vue'),
+      },
+      {
+        path: 'addTag',
+        name: 'addTag',
+        meta: {
+          title: '新建标签',
+          permiss: '1_7_1',
+          parentPath: '/tag',
+        },
+        component: () => import('../views/system/tag/AddTag.vue'),
+      },
+      {
+        path: 'editTag/:id',
+        name: 'editTag',
+        meta: {
+          title: '编辑标签',
+          permiss: '1_7_2',
+          parentPath: '/tag',
+        },
+        component: () => import('../views/system/tag/EditTag.vue'),
+      },
+      {
+        path: 'configTagCompany/:id',
+        name: 'configTagCompany',
+        meta: {
+          title: '局点配置',
+          permiss: '1_7_3',
+          parentPath: '/tag',
+        },
+        component: () => import('../views/system/tag/ConfigTagCompany.vue'),
+      },
       // {
       //   path: 'strategy',
       //   name: 'strategy',
