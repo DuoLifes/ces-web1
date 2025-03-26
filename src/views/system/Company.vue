@@ -10,6 +10,7 @@
       class="table-search company-search"
       ref="tableSearchRef"
       :key="searchFormKey"
+      @update:query="handleQueryUpdate"
     />
     <div class="container">
       <TableCustom
@@ -21,8 +22,8 @@
         :pageSize="page.size"
         :pageSizes="[10, 15, 20]"
         :sizeChange="handleSizeChange"
-        :editFunc="(row) => handleEdit(row as unknown as Company)"
-        :delFunc="(row) => handleDelete(row as unknown as Company)"
+        :editFunc="handleEdit"
+        :delFunc="handleDelete"
         :showView="false"
         :showEdit="true"
         :showDelete="true"
@@ -81,20 +82,6 @@ const query = reactive({
   companyName: '',
 })
 
-// 跟踪选择的值
-const selectedTenantId = ref<number | string>(0)
-const inputCompanyName = ref('')
-
-// 处理运营商选择变化
-const handleTenantChange = (value: number | string): void => {
-  selectedTenantId.value = value
-}
-
-// 处理局点名称输入变化
-const handleCompanyNameInput = (value: string): void => {
-  inputCompanyName.value = value
-}
-
 // 分页配置
 const page = reactive({
   index: 1,
@@ -124,7 +111,6 @@ const searchOpt = ref([
       allLabel: '全部',
       allValue: 0,
       clearable: true,
-      onChange: handleTenantChange,
     },
   },
   {
@@ -132,9 +118,6 @@ const searchOpt = ref([
     label: '局点名称：',
     prop: 'companyName',
     placeholder: '请输入局点名称',
-    props: {
-      onInput: handleCompanyNameInput,
-    },
   },
 ])
 
@@ -185,14 +168,13 @@ const options = ref<FormOption>({
 const getData = async (): Promise<void> => {
   try {
     loading.value = true
-
+    const formValues = tableSearchRef.value?.localQuery || query
     const params = {
-      tenantId: selectedTenantId.value ? Number(selectedTenantId.value) : 0,
-      companyName: inputCompanyName.value || '',
+      tenantId: formValues.tenantId ? Number(formValues.tenantId) : 0,
+      companyName: formValues.companyName || '',
       pageNo: page.index,
       pageSize: page.size,
     }
-
     const res = await fetchCompanyData(params)
 
     if (res.code === '00000') {
@@ -203,7 +185,7 @@ const getData = async (): Promise<void> => {
       tableData.value = []
       page.total = 0
     }
-  } catch {
+  } catch (e) {
     ElMessage.error('获取数据失败')
     tableData.value = []
     page.total = 0
@@ -221,9 +203,6 @@ const resetPagination = (): void => {
 
 // 重置查询条件
 const resetQuery = (): void => {
-  selectedTenantId.value = 0
-  inputCompanyName.value = ''
-
   query.tenantId = ''
   query.companyName = ''
 
@@ -233,7 +212,12 @@ const resetQuery = (): void => {
 }
 
 // 执行查询
-const handleSearch = (): void => {
+const handleSearch = (searchQuery?: Record<string, any>): void => {
+  if (searchQuery) {
+    // 使用从搜索组件接收的查询参数
+    query.tenantId = searchQuery.tenantId || ''
+    query.companyName = searchQuery.companyName || ''
+  }
   resetPagination()
   getData()
 }
@@ -339,6 +323,12 @@ const closeDialog = (): void => {
   visible.value = false
   isEdit.value = false
   rowData.value = {}
+}
+
+// 处理查询条件更新
+const handleQueryUpdate = (newQuery: any): void => {
+  // 将新的查询条件同步到本地
+  Object.assign(query, newQuery)
 }
 
 // 初始化加载数据
