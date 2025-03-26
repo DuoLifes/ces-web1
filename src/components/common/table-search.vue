@@ -15,7 +15,7 @@
             :disabled="item.disabled"
             :placeholder="item.placeholder"
             clearable
-            @update:modelValue="(value: string) => handleInputChange(item, value)"
+            @update:modelValue="(value) => handleInputChange(item, value)"
           ></el-input>
           <el-select
             v-else-if="item.type === 'select'"
@@ -24,7 +24,7 @@
             :disabled="item.disabled"
             :placeholder="item.placeholder"
             clearable
-            @update:modelValue="(value: string | number) => updateQueryField(item.prop, value)"
+            @update:modelValue="(value) => updateQueryField(item.prop, value)"
           >
             <el-option
               v-for="opt in item.opts"
@@ -39,7 +39,7 @@
             v-model="localQuery[item.prop]"
             :name="item.prop"
             :value-format="item.format"
-            @update:modelValue="(value: string | null) => updateQueryField(item.prop, value)"
+            @update:modelValue="(value) => updateQueryField(item.prop, value)"
           ></el-date-picker>
           <component
             v-else-if="item.type === 'custom' && item.component"
@@ -126,7 +126,7 @@ const resetForm = (formEl: FormInstance | undefined) => {
 }
 
 const search = () => {
-  props.search()
+  props.search(localQuery)
 }
 
 // 更新查询字段的通用方法
@@ -134,13 +134,9 @@ const updateQueryField = (field: string, value: string | number | boolean | null
   localQuery[field] = value !== null ? value : ''
 }
 
-// 处理输入框变化，支持onInput回调
+// 处理输入框变化，简化版本
 const handleInputChange = (item: FormOptionList, value: string): void => {
   localQuery[item.prop] = value
-  // 如果有onInput回调，则调用它
-  if (item.props?.onInput && typeof item.props.onInput === 'function') {
-    item.props.onInput(value)
-  }
 }
 </script>
 

@@ -91,7 +91,7 @@ const router = useRouter()
 const query = reactive({
   companyId: '',
   name: '',
-  type: '',
+  type: '' as string | number,
 })
 
 // 分页配置
@@ -136,9 +136,9 @@ const searchOpt = ref<SearchOption[]>([
     prop: 'type',
     placeholder: '请选择标签类别',
     opts: [
-      { value: '', label: '全部' },
-      { value: '0', label: '基础标签' },
-      { value: '1', label: '高级标签' },
+      { value: 0, label: '全部' },
+      { value: 1, label: '基础标签' },
+      { value: 2, label: '高级标签' },
     ],
   },
   {
@@ -168,11 +168,9 @@ const columns = ref([
 const getData = async (): Promise<void> => {
   try {
     loading.value = true
-    console.log('开始获取数据...')
 
     // 从表单组件获取最新值
     const formValues = tableSearchRef.value?.localQuery || query
-    console.log('表单本地值:', formValues)
 
     const params = {
       companyId:
@@ -185,14 +183,11 @@ const getData = async (): Promise<void> => {
       pageSize: page.size,
     }
 
-    console.log('API请求参数:', params)
-
     const res = await fetchTagData(params)
 
     if (res.code === '00000') {
       tableData.value = res.data.records || []
       page.total = res.data.total || 0
-      console.log('获取数据成功：', res.data.records)
     } else {
       ElMessage.error(res.msg || '获取数据失败')
       tableData.value = []
@@ -227,8 +222,13 @@ const resetQuery = (): void => {
 }
 
 // 执行查询
-const handleSearch = (): void => {
-  console.log('执行搜索，当前查询条件：', query)
+const handleSearch = (searchQuery?: Record<string, any>): void => {
+  if (searchQuery) {
+    // 使用从搜索组件接收的查询参数
+    query.companyId = searchQuery.companyId || ''
+    query.name = searchQuery.name || ''
+    query.type = searchQuery.type || ''
+  }
   resetPagination()
   getData()
 }
@@ -284,7 +284,6 @@ const handleDelete = async (row: Tag): Promise<void> => {
 
 // 初始化
 onMounted(() => {
-  console.log('标签管理组件已加载')
   getData()
 })
 </script>
