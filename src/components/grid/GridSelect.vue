@@ -172,6 +172,7 @@ function clearSelection(): void {
   emit('update:modelValue', '')
   emit('change', '')
   emit('selectionCleared')
+  tempGridName.value = '' // 确保临时名称也被清空
 
   // 如果提供了onChange回调，则调用它
   if (props.onChange) {

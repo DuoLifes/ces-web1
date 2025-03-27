@@ -12,6 +12,7 @@
       class="table-search community-search"
       ref="tableSearchRef"
       :key="searchFormKey"
+      @update:query="handleQueryUpdate"
     />
 
     <!-- 数据表格 -->
@@ -49,18 +50,19 @@
         <DialogTitle :title="isEdit ? '编辑小区' : '新增小区'" />
       </template>
       <TableEdit
-        :form-data="rowData"
+        v-model:form-data="rowData"
         :options="options"
         :edit="isEdit"
         :update="handleUpdate"
         @cancel="closeDialog"
+        @update:form-data="handleFormDataUpdate"
       />
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, markRaw, watch } from 'vue'
+import { ref, reactive, markRaw } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { Community } from '@/types/community'
 import type { FormOption } from '@/types/form-option'
@@ -85,68 +87,6 @@ const query = reactive({
   gridId: '',
   name: '',
 })
-
-// 跟踪选择的值
-const selectedTenantId = ref<number | string>(0)
-const selectedCompanyId = ref<number | string>(0)
-const selectedGridId = ref<number | string>(0)
-const inputCommunityName = ref('')
-
-// 处理运营商选择变化
-const handleTenantChange = (value: number | string): void => {
-  selectedTenantId.value = value
-  query.tenantId = value as string
-
-  // 清除已选择的局点和网格
-  selectedCompanyId.value = ''
-  query.companyId = ''
-  selectedGridId.value = ''
-  query.gridId = ''
-
-  // 更新searchOpt中CompanySelect组件的tenantId属性
-  const companyOption = searchOpt.value.find((opt) => opt.prop === 'companyId')
-  if (companyOption?.props) {
-    companyOption.props.tenantId = value
-  }
-}
-
-// 处理局点选择变化
-const handleCompanyChange = (value: number | string): void => {
-  selectedCompanyId.value = value
-  query.companyId = value as string
-
-  // 清除已选择的网格
-  selectedGridId.value = ''
-  query.gridId = ''
-
-  // 更新searchOpt中GridSelect组件的companyId属性
-  const gridOption = searchOpt.value.find((opt) => opt.prop === 'gridId')
-  if (gridOption?.props) {
-    gridOption.props.companyId = value
-  }
-}
-
-// 处理网格选择变化
-const handleGridChange = (value: number | string): void => {
-  selectedGridId.value = value
-  query.gridId = value as string
-}
-
-// 处理小区名称输入变化
-const handleCommunityNameInput = (value: string): void => {
-  inputCommunityName.value = value
-  query.name = value
-}
-
-// 处理编辑表单中运营商选择变化
-const handleEditFormTenantChange = (value: number | string): void => {
-  updateCompanySelectTenantId(value)
-}
-
-// 处理编辑表单中局点选择变化
-const handleEditFormCompanyChange = (value: number | string): void => {
-  updateGridSelectCompanyId(value)
-}
 
 // 分页配置
 const page = reactive({
@@ -194,7 +134,6 @@ const searchOpt = ref<SearchOption[]>([
       allLabel: '全部',
       allValue: 0,
       clearable: true,
-      onChange: handleTenantChange,
     },
   },
   {
@@ -209,7 +148,6 @@ const searchOpt = ref<SearchOption[]>([
       allLabel: '全部',
       allValue: 0,
       clearable: true,
-      onChange: handleCompanyChange,
     },
   },
   {
@@ -224,7 +162,6 @@ const searchOpt = ref<SearchOption[]>([
       allLabel: '全部',
       allValue: 0,
       clearable: true,
-      onChange: handleGridChange,
     },
   },
   {
@@ -232,9 +169,6 @@ const searchOpt = ref<SearchOption[]>([
     label: '小区名称：',
     prop: 'name',
     placeholder: '请输入小区名称',
-    props: {
-      onInput: handleCommunityNameInput,
-    },
   },
 ])
 
@@ -265,7 +199,6 @@ const options = ref<FormOption>({
         showAll: false,
         clearable: false,
         placeholder: '请选择运营商',
-        onChange: handleEditFormTenantChange,
       },
     },
     {
@@ -281,8 +214,8 @@ const options = ref<FormOption>({
         clearable: false,
         placeholder: '请选择局点',
         autoClearOnTenantChange: true, // 启用自动清空功能
-        onChange: handleEditFormCompanyChange,
       },
+      dependOn: 'tenantId', // 添加依赖关系，表示此字段依赖于tenantId
     },
     {
       type: 'custom',
@@ -298,6 +231,7 @@ const options = ref<FormOption>({
         placeholder: '请选择网格',
         autoClearOnCompanyChange: true, // 启用自动清空功能
       },
+      dependOn: 'companyId', // 添加依赖关系，表示此字段依赖于companyId
     },
     {
       type: 'input',
@@ -334,11 +268,13 @@ const getData = async (): Promise<void> => {
   try {
     loading.value = true
 
+    const formValues = tableSearchRef.value?.localQuery || query
+
     const params = {
-      tenantId: selectedTenantId.value ? Number(selectedTenantId.value) : undefined,
-      companyId: selectedCompanyId.value ? Number(selectedCompanyId.value) : undefined,
-      gridId: selectedGridId.value ? Number(selectedGridId.value) : undefined,
-      name: inputCommunityName.value || undefined,
+      tenantId: formValues.tenantId ? Number(formValues.tenantId) : undefined,
+      companyId: formValues.companyId ? Number(formValues.companyId) : undefined,
+      gridId: formValues.gridId ? Number(formValues.gridId) : undefined,
+      name: formValues.name || undefined,
       pageNo: page.index,
       pageSize: page.size,
     }
@@ -371,21 +307,18 @@ const resetPagination = (): void => {
 
 // 重置查询条件
 const resetQuery = (): void => {
-  selectedTenantId.value = 0
-  selectedCompanyId.value = 0
-  selectedGridId.value = 0
-  inputCommunityName.value = ''
-
   query.tenantId = ''
   query.companyId = ''
   query.gridId = ''
   query.name = ''
 
+  // 更新CompanySelect组件的tenantId
   const companyOption = searchOpt.value.find((opt) => opt.prop === 'companyId')
   if (companyOption?.props) {
     companyOption.props.tenantId = ''
   }
 
+  // 更新GridSelect组件的companyId
   const gridOption = searchOpt.value.find((opt) => opt.prop === 'gridId')
   if (gridOption?.props) {
     gridOption.props.companyId = ''
@@ -397,9 +330,94 @@ const resetQuery = (): void => {
 }
 
 // 执行查询
-const handleSearch = (): void => {
+const handleSearch = (searchQuery?: Record<string, unknown>): void => {
+  if (searchQuery) {
+    // 使用从搜索组件接收的查询参数
+    query.tenantId = (searchQuery.tenantId as string) || ''
+    query.companyId = (searchQuery.companyId as string) || ''
+    query.gridId = (searchQuery.gridId as string) || ''
+    query.name = (searchQuery.name as string) || ''
+  }
+
   resetPagination()
   getData()
+}
+
+// 处理查询条件更新
+const handleQueryUpdate = (newQuery: Record<string, unknown>): void => {
+  const oldTenantId = query.tenantId
+
+  // 将新的查询条件同步到本地
+  Object.assign(query, newQuery)
+
+  // 更新CompanySelect组件的tenantId
+  if (newQuery.tenantId !== undefined && newQuery.tenantId !== oldTenantId) {
+    const companyOption = searchOpt.value.find((opt) => opt.prop === 'companyId')
+    if (companyOption?.props) {
+      companyOption.props.tenantId = newQuery.tenantId
+    }
+
+    // 如果运营商变化，清空局点和网格
+    if (query.companyId) query.companyId = ''
+    if (query.gridId) query.gridId = ''
+
+    // 清空网格选择器的companyId
+    const gridOption = searchOpt.value.find((opt) => opt.prop === 'gridId')
+    if (gridOption?.props) {
+      gridOption.props.companyId = ''
+    }
+  }
+
+  // 更新GridSelect组件的companyId
+  if (newQuery.companyId !== undefined) {
+    const gridOption = searchOpt.value.find((opt) => opt.prop === 'gridId')
+    if (gridOption?.props) {
+      gridOption.props.companyId = newQuery.companyId
+    }
+
+    // 如果局点变化，清空网格
+    if (query.gridId && newQuery.companyId !== query.companyId) {
+      query.gridId = ''
+    }
+  }
+}
+
+// 处理表单数据更新
+const handleFormDataUpdate = (newFormData: Record<string, unknown>): void => {
+  // 在运营商变化时重点处理
+  if (newFormData.tenantId !== undefined && newFormData.tenantId !== rowData.value.tenantId) {
+    console.log('运营商变化:', {
+      old: rowData.value.tenantId,
+      new: newFormData.tenantId,
+    })
+
+    // 更新CompanySelect组件的tenantId
+    updateCompanySelectTenantId(newFormData.tenantId as string | number)
+
+    // 清空局点和网格值（参考查询表单的处理方式）
+    rowData.value.companyId = ''
+    rowData.value.gridId = ''
+
+    // 关键点：清空网格选择器的companyId，这样会触发GridSelect组件的监听器清空列表
+    updateGridSelectCompanyId('')
+  }
+
+  // 在局点变化时处理
+  if (newFormData.companyId !== undefined && newFormData.companyId !== rowData.value.companyId) {
+    console.log('局点变化:', {
+      old: rowData.value.companyId,
+      new: newFormData.companyId,
+    })
+
+    // 更新GridSelect组件的companyId
+    updateGridSelectCompanyId(newFormData.companyId as string | number)
+
+    // 清空网格值
+    rowData.value.gridId = ''
+  }
+
+  // 将表单数据同步到rowData
+  Object.assign(rowData.value, newFormData)
 }
 
 // 页码变化
@@ -417,6 +435,12 @@ const handleSizeChange = (val: number): void => {
 
 // 新增小区
 const handleAdd = (): void => {
+  // 先设置isEdit为false
+  isEdit.value = false
+  // 清空CompanySelect组件的tenantId和GridSelect组件的companyId
+  updateCompanySelectTenantId('')
+  updateGridSelectCompanyId('')
+  // 然后设置空的rowData
   rowData.value = {
     tenantId: '',
     companyId: '',
@@ -424,32 +448,29 @@ const handleAdd = (): void => {
     name: '',
   }
 
-  updateCompanySelectTenantId('')
-  updateGridSelectCompanyId('')
-  isEdit.value = false
+  // 最后打开弹窗
   visible.value = true
 }
 
 // 编辑小区
-const handleEdit = (row: any): void => {
+const handleEdit = (row: Community): void => {
   // 先设置isEdit为true，这样可以确保表单知道当前是编辑模式
   isEdit.value = true
 
+  // 确保先更新CompanySelect组件的tenantId
+  if (row.tenantId) {
+    // 更新选择器的tenantId，这将触发CompanySelect组件加载对应租户的局点列表
+    updateCompanySelectTenantId(row.tenantId)
+  }
+
+  // 更新网格选择器的companyId
+  if (row.companyId) {
+    // 更新选择器的companyId，这将触发GridSelect组件加载对应局点的网格列表
+    updateGridSelectCompanyId(row.companyId)
+  }
+
   // 然后设置rowData，确保数据正确
   rowData.value = { ...row }
-
-  console.log('编辑小区，当前行数据:', rowData.value)
-
-  // 确保先更新CompanySelect组件的tenantId和GridSelect组件的companyId
-  if (rowData.value.tenantId) {
-    // 更新选择器的tenantId，这将触发CompanySelect组件加载对应租户的局点列表
-    updateCompanySelectTenantId(rowData.value.tenantId)
-  }
-
-  if (rowData.value.companyId) {
-    // 更新网格选择器的companyId，这将触发GridSelect组件加载对应局点的网格列表
-    updateGridSelectCompanyId(rowData.value.companyId)
-  }
 
   // 最后打开弹窗
   visible.value = true
@@ -463,7 +484,7 @@ const closeDialog = (): void => {
 }
 
 // 删除小区
-const handleDelete = async (row: any): Promise<void> => {
+const handleDelete = async (row: Community): Promise<void> => {
   try {
     const res = await deleteCommunity(row.id)
     if (res.code === '00000') {
@@ -540,32 +561,6 @@ const handleUpdate = async (formData: Partial<Community>): Promise<void> => {
     ElMessage.error('操作失败')
   }
 }
-
-// 确保编辑模式下组件选择器正确显示
-watch(
-  () => visible.value,
-  (newValue) => {
-    if (
-      newValue &&
-      isEdit.value &&
-      rowData.value.tenantId &&
-      rowData.value.companyId &&
-      rowData.value.gridId
-    ) {
-      console.log('编辑弹窗打开，确保选择器数据已加载:', {
-        tenantId: rowData.value.tenantId,
-        companyId: rowData.value.companyId,
-        gridId: rowData.value.gridId,
-      })
-
-      // 直接更新CompanySelect组件的tenantId，触发组件内的数据加载
-      updateCompanySelectTenantId(rowData.value.tenantId)
-
-      // 直接更新GridSelect组件的companyId，触发组件内的数据加载
-      updateGridSelectCompanyId(rowData.value.companyId)
-    }
-  },
-)
 
 // 初始化加载数据
 getData()

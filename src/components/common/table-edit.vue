@@ -208,6 +208,39 @@ const handleFieldChange = (prop: string, value: unknown) => {
             if (item.props.autoClearOnTenantChange) {
               console.log('由于运营商变化，清空局点选择')
               form.value[item.prop] = ''
+
+              // 同时清空网格选择
+              if (form.value['gridId']) {
+                form.value['gridId'] = ''
+
+                // 关键修改：清空所有网格组件中的companyId属性
+                const gridItem = options.list.find(
+                  (gi: ExtendedFormOptionItem) => gi.prop === 'gridId',
+                )
+
+                if (gridItem && gridItem.props) {
+                  console.log('*** 关键修改：主动清空网格选择器的companyId属性 ***')
+                  gridItem.props.companyId = ''
+                }
+
+                // 立即触发更新，确保UI同步
+                emit('update:form-data', { ...form.value })
+              }
+            }
+          }
+
+          // 特殊处理：当字段为gridId，依赖于companyId时
+          if (prop === 'companyId' && item.prop === 'gridId') {
+            console.log(`更新 ${item.prop} 的 companyId 为:`, value)
+            item.props.companyId = value
+
+            // 如果companyId变化了，可能需要清空gridId的值
+            if (item.props.autoClearOnCompanyChange) {
+              console.log('由于局点变化，清空网格选择')
+              form.value[item.prop] = ''
+
+              // 立即触发更新，确保UI同步
+              emit('update:form-data', { ...form.value })
             }
           }
         }
