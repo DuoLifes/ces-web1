@@ -17,12 +17,14 @@
             :disabled="item.disabled"
             :placeholder="item.placeholder"
             clearable
+            @update:model-value="(value) => handleFieldChange(item.prop, value)"
           ></el-input>
           <el-input-number
             v-else-if="item.type === 'number'"
             v-model="form[item.prop]"
             :disabled="item.disabled"
             controls-position="right"
+            @update:model-value="(value) => handleFieldChange(item.prop, value)"
           ></el-input-number>
           <el-select
             v-else-if="item.type === 'select' && !item.component"
@@ -30,6 +32,7 @@
             :disabled="item.disabled"
             :placeholder="item.placeholder"
             clearable
+            @update:model-value="(value) => handleFieldChange(item.prop, value)"
           >
             <el-option
               v-for="opt in item.opts"
@@ -45,12 +48,14 @@
             :placeholder="item.placeholder"
             type="textarea"
             :rows="4"
+            @update:model-value="(value) => handleFieldChange(item.prop, value)"
           ></el-input>
           <el-date-picker
             v-else-if="item.type === 'date'"
             type="date"
             v-model="form[item.prop]"
             :value-format="item.format"
+            @update:model-value="(value) => handleFieldChange(item.prop, value)"
           ></el-date-picker>
           <el-switch
             v-else-if="item.type === 'switch'"
@@ -59,6 +64,7 @@
             :inactive-value="item.inactiveValue"
             :active-text="item.activeText"
             :inactive-text="item.inactiveText"
+            @update:model-value="(value) => handleFieldChange(item.prop, value)"
           ></el-switch>
           <el-upload
             v-else-if="item.type === 'upload'"
@@ -78,6 +84,7 @@
             v-model="form[item.prop]"
             v-bind="item.props || {}"
             class="custom-component"
+            @update:model-value="(value) => handleFieldChange(item.prop, value)"
           ></component>
           <slot :name="item.prop" v-else> </slot>
         </el-form-item>
@@ -96,6 +103,19 @@ import type { FormOption } from '@/types/form-option'
 import type { FormInstance, FormRules, UploadProps, FormItemRule } from 'element-plus'
 import type { PropType } from 'vue'
 import { ref, watch, markRaw } from 'vue'
+
+// 扩展表单选项接口以支持依赖字段
+interface ExtendedFormOptionItem {
+  type: string
+  label: string
+  prop: string
+  placeholder?: string
+  component?: unknown
+  props?: Record<string, unknown>
+  required?: boolean
+  disabled?: boolean
+  dependOn?: string // 依赖的字段名
+}
 
 const { options, formData, edit, update } = defineProps({
   options: {
@@ -117,7 +137,7 @@ const { options, formData, edit, update } = defineProps({
 })
 
 // 触发取消事件
-const emit = defineEmits(['cancel'])
+const emit = defineEmits(['cancel', 'update:form-data'])
 
 // 取消编辑的方法
 const cancelEdit = () => {
@@ -155,6 +175,46 @@ watch(
   },
   { deep: true, immediate: true },
 )
+
+// 处理表单字段值变化
+const handleFieldChange = (prop: string, value: unknown) => {
+  console.log(`字段 ${prop} 值变化:`, value)
+
+  // 更新表单数据
+  form.value[prop] = value
+
+  // 触发update:form-data事件
+  emit('update:form-data', { ...form.value })
+
+  // 处理依赖字段的更新
+  if (options.list && Array.isArray(options.list)) {
+    // 查找依赖于当前变化字段的表单项
+    const dependentItems = options.list.filter(
+      (item: ExtendedFormOptionItem) => item.dependOn === prop,
+    )
+
+    // 更新依赖字段的props
+    if (dependentItems.length > 0) {
+      console.log(`找到 ${dependentItems.length} 个依赖于 ${prop} 的字段`)
+
+      dependentItems.forEach((item: ExtendedFormOptionItem) => {
+        if (item.props) {
+          // 特殊处理：当字段为companyId，依赖于tenantId时
+          if (prop === 'tenantId' && item.prop === 'companyId') {
+            console.log(`更新 ${item.prop} 的 tenantId 为:`, value)
+            item.props.tenantId = value
+
+            // 如果tenantId变化了，可能需要清空companyId的值
+            if (item.props.autoClearOnTenantChange) {
+              console.log('由于运营商变化，清空局点选择')
+              form.value[item.prop] = ''
+            }
+          }
+        }
+      })
+    }
+  }
+}
 
 // 生成校验规则
 const rules: FormRules = options.list.reduce((acc, item) => {

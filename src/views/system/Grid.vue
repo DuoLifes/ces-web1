@@ -12,6 +12,7 @@
       class="table-search grid-search"
       ref="tableSearchRef"
       :key="searchFormKey"
+      @update:query="handleQueryUpdate"
     />
 
     <!-- 数据表格 -->
@@ -49,18 +50,19 @@
         <DialogTitle :title="isEdit ? '编辑网格' : '新增网格'" />
       </template>
       <TableEdit
-        :form-data="rowData"
+        v-model:form-data="rowData"
         :options="options"
         :edit="isEdit"
         :update="handleUpdate"
         @cancel="closeDialog"
+        @update:form-data="handleFormDataUpdate"
       />
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, markRaw, watch } from 'vue'
+import { ref, reactive, markRaw } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { Grid } from '@/types/grid'
 import type { FormOption } from '@/types/form-option'
@@ -83,42 +85,6 @@ const query = reactive({
   companyId: '',
   gridName: '',
 })
-
-// 跟踪选择的值
-const selectedTenantId = ref<number | string>(0)
-const selectedCompanyId = ref<number | string>(0)
-const inputGridName = ref('')
-
-// 处理运营商选择变化
-const handleTenantChange = (value: number | string): void => {
-  selectedTenantId.value = value
-  query.tenantId = value as string
-
-  // 清除已选择的局点
-  selectedCompanyId.value = ''
-  query.companyId = ''
-
-  // 更新searchOpt中CompanySelect组件的tenantId属性
-  const companyOption = searchOpt.value.find((opt) => opt.prop === 'companyId')
-  if (companyOption?.props) {
-    companyOption.props.tenantId = value
-  }
-}
-
-// 处理局点选择变化
-const handleCompanyChange = (value: number | string): void => {
-  selectedCompanyId.value = value
-}
-
-// 处理网格名称输入变化
-const handleGridNameInput = (value: string): void => {
-  inputGridName.value = value
-}
-
-// 处理编辑表单中运营商选择变化
-const handleEditFormTenantChange = (value: number | string): void => {
-  updateCompanySelectTenantId(value)
-}
 
 // 分页配置
 const page = reactive({
@@ -166,7 +132,6 @@ const searchOpt = ref<SearchOption[]>([
       allLabel: '全部',
       allValue: 0,
       clearable: true,
-      onChange: handleTenantChange,
     },
   },
   {
@@ -181,7 +146,6 @@ const searchOpt = ref<SearchOption[]>([
       allLabel: '全部',
       allValue: 0,
       clearable: true,
-      onChange: handleCompanyChange,
     },
   },
   {
@@ -189,9 +153,6 @@ const searchOpt = ref<SearchOption[]>([
     label: '网格名称：',
     prop: 'gridName',
     placeholder: '请输入网格名称',
-    props: {
-      onInput: handleGridNameInput,
-    },
   },
 ])
 
@@ -221,7 +182,6 @@ const options = ref<FormOption>({
         showAll: false,
         clearable: false,
         placeholder: '请选择运营商',
-        onChange: handleEditFormTenantChange,
       },
     },
     {
@@ -238,6 +198,7 @@ const options = ref<FormOption>({
         placeholder: '请选择局点',
         autoClearOnTenantChange: true, // 启用自动清空功能
       },
+      dependOn: 'tenantId', // 添加依赖关系，表示此字段依赖于tenantId
     },
     {
       type: 'input',
@@ -264,10 +225,12 @@ const getData = async (): Promise<void> => {
   try {
     loading.value = true
 
+    const formValues = tableSearchRef.value?.localQuery || query
+
     const params = {
-      tenantId: selectedTenantId.value ? Number(selectedTenantId.value) : undefined,
-      companyId: selectedCompanyId.value ? Number(selectedCompanyId.value) : undefined,
-      name: inputGridName.value || undefined,
+      tenantId: formValues.tenantId ? Number(formValues.tenantId) : undefined,
+      companyId: formValues.companyId ? Number(formValues.companyId) : undefined,
+      name: formValues.gridName || undefined,
       pageNo: page.index,
       pageSize: page.size,
     }
@@ -300,14 +263,11 @@ const resetPagination = (): void => {
 
 // 重置查询条件
 const resetQuery = (): void => {
-  selectedTenantId.value = 0
-  selectedCompanyId.value = 0
-  inputGridName.value = ''
-
   query.tenantId = ''
   query.companyId = ''
   query.gridName = ''
 
+  // 更新CompanySelect组件的tenantId
   const companyOption = searchOpt.value.find((opt) => opt.prop === 'companyId')
   if (companyOption?.props) {
     companyOption.props.tenantId = ''
@@ -319,9 +279,39 @@ const resetQuery = (): void => {
 }
 
 // 执行查询
-const handleSearch = (): void => {
+const handleSearch = (searchQuery?: Record<string, unknown>): void => {
+  if (searchQuery) {
+    // 使用从搜索组件接收的查询参数
+    query.tenantId = (searchQuery.tenantId as string) || ''
+    query.companyId = (searchQuery.companyId as string) || ''
+    query.gridName = (searchQuery.gridName as string) || ''
+  }
+
   resetPagination()
   getData()
+}
+
+// 处理查询条件更新
+const handleQueryUpdate = (newQuery: Record<string, unknown>): void => {
+  // 将新的查询条件同步到本地
+  Object.assign(query, newQuery)
+
+  // 更新CompanySelect组件的tenantId
+  if (newQuery.tenantId !== undefined) {
+    const companyOption = searchOpt.value.find((opt) => opt.prop === 'companyId')
+    if (companyOption?.props) {
+      companyOption.props.tenantId = newQuery.tenantId
+    }
+  }
+}
+
+// 处理表单数据更新
+const handleFormDataUpdate = (newFormData: Record<string, unknown>): void => {
+  // 更新CompanySelect组件的tenantId
+  if (newFormData.tenantId !== undefined && newFormData.tenantId !== rowData.value.tenantId) {
+    // 使用类型断言，避免TypeScript错误
+    updateCompanySelectTenantId(newFormData.tenantId as string | number)
+  }
 }
 
 // 页码变化
@@ -339,14 +329,18 @@ const handleSizeChange = (val: number): void => {
 
 // 新增网格
 const handleAdd = (): void => {
+  // 先设置isEdit为false
+  isEdit.value = false
+  // 清空CompanySelect组件的tenantId
+  updateCompanySelectTenantId('')
+  // 然后设置空的rowData
   rowData.value = {
     tenantId: '',
     companyId: '',
     gridName: '',
   }
 
-  updateCompanySelectTenantId('')
-  isEdit.value = false
+  // 最后打开弹窗
   visible.value = true
 }
 
@@ -355,19 +349,14 @@ const handleEdit = (row: Grid): void => {
   // 先设置isEdit为true，这样可以确保表单知道当前是编辑模式
   isEdit.value = true
 
+  // 确保先更新CompanySelect组件的tenantId
+  if (row.tenantId) {
+    // 更新选择器的tenantId，这将触发CompanySelect组件加载对应租户的局点列表
+    updateCompanySelectTenantId(row.tenantId)
+  }
+
   // 然后设置rowData，确保数据正确
   rowData.value = { ...row }
-
-  console.log('编辑网格，当前行数据:', rowData.value)
-
-  // 确保先更新CompanySelect组件的tenantId
-  if (rowData.value.tenantId) {
-    // 更新选择器的tenantId，这将触发CompanySelect组件加载对应租户的局点列表
-    updateCompanySelectTenantId(rowData.value.tenantId)
-
-    // 记录下局点ID和名称，以便验证是否正确显示
-    console.log('当前选中的局点ID:', rowData.value.companyId, '名称:', rowData.value.companyName)
-  }
 
   // 最后打开弹窗
   visible.value = true
@@ -458,27 +447,6 @@ const handleUpdate = async (formData: Partial<Grid>): Promise<void> => {
     ElMessage.error('操作失败')
   }
 }
-
-// 确保编辑模式下公司选择器正确显示
-watch(
-  () => visible.value,
-  (newValue) => {
-    if (newValue && isEdit.value && rowData.value.tenantId && rowData.value.companyId) {
-      console.log('编辑弹窗打开，确保公司选择器数据已加载:', {
-        tenantId: rowData.value.tenantId,
-        companyId: rowData.value.companyId,
-      })
-
-      // 直接更新CompanySelect组件的tenantId，触发组件内的数据加载
-      if (options.value.list && options.value.list.length > 1) {
-        const companyOption = options.value.list[1]
-        if (companyOption?.props) {
-          companyOption.props.tenantId = rowData.value.tenantId
-        }
-      }
-    }
-  },
-)
 
 // 初始化加载数据
 getData()
