@@ -183,9 +183,6 @@ const handleFieldChange = (prop: string, value: unknown) => {
   // 更新表单数据
   form.value[prop] = value
 
-  // 触发update:form-data事件
-  emit('update:form-data', { ...form.value })
-
   // 处理依赖字段的更新
   if (options.list && Array.isArray(options.list)) {
     // 查找依赖于当前变化字段的表单项
@@ -209,23 +206,38 @@ const handleFieldChange = (prop: string, value: unknown) => {
               console.log('由于运营商变化，清空局点选择')
               form.value[item.prop] = ''
 
-              // 同时清空网格选择
+              // 清空网格选择和营销组选择
               if (form.value['gridId']) {
                 form.value['gridId'] = ''
 
-                // 关键修改：清空所有网格组件中的companyId属性
+                // 清空所有网格组件中的companyId属性
                 const gridItem = options.list.find(
                   (gi: ExtendedFormOptionItem) => gi.prop === 'gridId',
                 )
 
                 if (gridItem && gridItem.props) {
-                  console.log('*** 关键修改：主动清空网格选择器的companyId属性 ***')
+                  console.log('*** 清空网格选择器的companyId属性 ***')
                   gridItem.props.companyId = ''
                 }
-
-                // 立即触发更新，确保UI同步
-                emit('update:form-data', { ...form.value })
               }
+
+              // 处理营销组选择（如果存在）
+              if (form.value['marketingGroupId']) {
+                form.value['marketingGroupId'] = ''
+
+                // 清空所有营销组组件中的companyId属性
+                const marketingGroupItem = options.list.find(
+                  (gi: ExtendedFormOptionItem) => gi.prop === 'marketingGroupId',
+                )
+
+                if (marketingGroupItem && marketingGroupItem.props) {
+                  console.log('*** 清空营销组选择器的companyId属性 ***')
+                  marketingGroupItem.props.companyId = ''
+                }
+              }
+
+              // 立即触发更新，确保UI同步
+              emit('update:form-data', { ...form.value })
             }
           }
 
@@ -238,15 +250,27 @@ const handleFieldChange = (prop: string, value: unknown) => {
             if (item.props.autoClearOnCompanyChange) {
               console.log('由于局点变化，清空网格选择')
               form.value[item.prop] = ''
+            }
+          }
 
-              // 立即触发更新，确保UI同步
-              emit('update:form-data', { ...form.value })
+          // 特殊处理：当字段为marketingGroupId，依赖于companyId时
+          if (prop === 'companyId' && item.prop === 'marketingGroupId') {
+            console.log(`更新 ${item.prop} 的 companyId 为:`, value)
+            item.props.companyId = value
+
+            // 如果companyId变化了，可能需要清空marketingGroupId的值
+            if (item.props.autoClearOnCompanyChange) {
+              console.log('由于局点变化，清空营销组选择')
+              form.value[item.prop] = ''
             }
           }
         }
       })
     }
   }
+
+  // 触发update:form-data事件
+  emit('update:form-data', { ...form.value })
 }
 
 // 生成校验规则
