@@ -11,6 +11,7 @@
       class="table-search role-search"
       ref="tableSearchRef"
       :key="searchFormKey"
+      @update:query="handleQueryUpdate"
     />
 
     <!-- 数据表格 -->
@@ -24,8 +25,8 @@
         :pageSize="page.size"
         :pageSizes="[10, 15, 20]"
         :sizeChange="handleSizeChange"
-        :editFunc="(row) => handleEdit(row as unknown as Role)"
-        :delFunc="(row) => handleDelete(row as unknown as Role)"
+        :editFunc="handleEdit"
+        :delFunc="handleDelete"
         :showView="false"
         :showEdit="true"
         :showDelete="true"
@@ -84,14 +85,6 @@ const query = reactive({
   name: '',
 })
 
-// 跟踪查询输入
-const inputRoleName = ref('')
-
-// 角色名称输入变化处理
-const handleRoleNameInput = (value: string): void => {
-  inputRoleName.value = value
-}
-
 // 分页配置
 const page = reactive({
   index: 1,
@@ -115,9 +108,6 @@ const searchOpt = ref([
     label: '角色名称：',
     prop: 'name',
     placeholder: '请输入角色名称',
-    props: {
-      onInput: handleRoleNameInput,
-    },
   },
 ])
 
@@ -157,9 +147,9 @@ const options = ref<FormOption>({
 const getData = async (): Promise<void> => {
   try {
     loading.value = true
-
+    const formValues = tableSearchRef.value?.localQuery || query
     const params = {
-      name: inputRoleName.value || undefined,
+      name: formValues.name || undefined,
       pageNo: page.index,
       pageSize: page.size,
     }
@@ -192,7 +182,6 @@ const resetPagination = (): void => {
 
 // 重置查询条件
 const resetQuery = (): void => {
-  inputRoleName.value = ''
   query.name = ''
   searchFormKey.value += 1
   resetPagination()
@@ -200,9 +189,20 @@ const resetQuery = (): void => {
 }
 
 // 执行查询
-const handleSearch = (): void => {
+const handleSearch = (searchQuery?: Record<string, unknown>): void => {
+  if (searchQuery) {
+    // 使用从搜索组件接收的查询参数
+    query.name = (searchQuery.name as string) || ''
+  }
+
   resetPagination()
   getData()
+}
+
+// 处理查询条件更新
+const handleQueryUpdate = (newQuery: Record<string, unknown>): void => {
+  // 将新的查询条件同步到本地
+  Object.assign(query, newQuery)
 }
 
 // 页码变化处理
