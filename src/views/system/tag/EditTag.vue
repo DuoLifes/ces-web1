@@ -1,11 +1,7 @@
 <!-- 编辑标签页面 -->
 <template>
   <div class="page-container">
-    <div class="container">
-      <div class="form-header">
-        <div class="title-bar"></div>
-        <h2 class="title">编辑标签</h2>
-      </div>
+    <div class="form-container">
       <el-form
         ref="formRef"
         :model="formData"
@@ -14,19 +10,39 @@
         class="tag-form"
         v-loading="loading"
       >
-        <el-form-item label="标签名称" prop="name">
-          <el-input v-model="formData.name" placeholder="请输入标签名称" />
-        </el-form-item>
-        <el-form-item label="标签类别" prop="type">
-          <el-select v-model="formData.type" placeholder="请选择标签类别">
-            <el-option :value="0" label="基础标签" />
-            <el-option :value="1" label="高级标签" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="submitForm">提交</el-button>
-          <el-button @click="goBack">返回</el-button>
-        </el-form-item>
+        <div class="form-content">
+          <el-form-item label="标签名称：" prop="name" required>
+            <el-input
+              v-model="formData.name"
+              placeholder="请输入标签名称"
+              class="form-input"
+              clearable
+            />
+          </el-form-item>
+          <el-form-item label="标签类别：" prop="type" required>
+            <el-select v-model="formData.type" placeholder="请选择标签类别" class="form-select">
+              <el-option :value="1" label="基础标签" />
+              <el-option :value="2" label="高级标签" />
+            </el-select>
+          </el-form-item>
+        </div>
+
+        <div class="form-footer">
+          <div class="form-buttons">
+            <el-button type="primary" @click="submitForm">确定</el-button>
+            <el-popconfirm
+              title="编辑数据未保存，是否确定返回？"
+              confirm-button-text="确定"
+              cancel-button-text="取消"
+              @confirm="goBack"
+              width="300"
+            >
+              <template #reference>
+                <el-button>返回</el-button>
+              </template>
+            </el-popconfirm>
+          </div>
+        </div>
       </el-form>
     </div>
   </div>
@@ -36,7 +52,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance } from 'element-plus'
-import { fetchTagData, updateTag } from '@/api/tag'
+import { updateTag } from '@/api/tag'
 import type { Tag } from '@/types/tag'
 
 defineOptions({ name: 'EditTagView' })
@@ -51,7 +67,7 @@ const tagId = ref<number>(Number(route.params.id))
 const formData = reactive({
   id: 0,
   name: '',
-  type: 0,
+  type: 1,
 })
 
 // 表单验证规则
@@ -64,7 +80,7 @@ const rules = {
 }
 
 // 获取标签详情
-const getTagDetail = async (): Promise<void> => {
+const getTagDetail = (): void => {
   if (!tagId.value) {
     ElMessage.error('标签ID无效')
     router.push('/tag')
@@ -73,27 +89,29 @@ const getTagDetail = async (): Promise<void> => {
 
   try {
     loading.value = true
-    const res = await fetchTagData({
-      pageNo: 1,
-      pageSize: 10,
-    })
 
-    if (res.code === '00000') {
-      // 找到当前ID的标签
-      const tag = res.data.records.find((item: Tag) => item.id === tagId.value)
-      if (tag) {
-        formData.id = tag.id
-        formData.name = tag.name
-        formData.type = tag.type
+    // 从URL查询参数中获取标签数据
+    const tagDataParam = route.query.tagData as string
+
+    if (tagDataParam) {
+      // 解析URL传递过来的标签数据
+      const tagData = JSON.parse(decodeURIComponent(tagDataParam)) as Tag
+
+      if (tagData) {
+        formData.id = tagData.id
+        formData.name = tagData.name
+        formData.type = tagData.type
+        console.log('从URL获取到标签数据:', tagData)
       } else {
-        ElMessage.error('未找到标签信息')
+        ElMessage.error('标签数据解析失败')
         router.push('/tag')
       }
     } else {
-      ElMessage.error(res.msg || '获取标签信息失败')
+      ElMessage.error('未找到标签数据')
       router.push('/tag')
     }
-  } catch {
+  } catch (error) {
+    console.error('解析标签数据失败:', error)
     ElMessage.error('获取标签信息失败')
     router.push('/tag')
   } finally {
@@ -141,31 +159,52 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.form-header {
+.page-container {
+  height: calc(100vh - 120px); /* 减去头部和面包屑的高度 */
+  box-sizing: border-box;
   display: flex;
-  align-items: center;
-  margin-bottom: 20px;
+  flex-direction: column;
 }
 
-.title-bar {
-  width: 4px;
-  height: 20px;
-  background-color: var(--el-color-primary);
-  margin-right: 8px;
-}
-
-.title {
-  font-size: 18px;
-  font-weight: bold;
-  margin: 0;
+.form-container {
+  background-color: #fff;
+  border-radius: 4px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 50px;
 }
 
 .tag-form {
   max-width: 600px;
+  margin: 0 auto;
+  padding: 24px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.tag-form :deep(.el-input),
-.tag-form :deep(.el-select) {
-  width: 300px;
+.form-content {
+  flex: 1;
+  padding: 20px 0;
+}
+
+.form-footer {
+  border-top: 1px solid #dcdfe6;
+  padding: 16px 0;
+  background-color: #fff;
+  margin-top: auto; /* 将按钮区域推到底部 */
+}
+
+.form-select,
+.form-input {
+  width: 100%;
+}
+
+.form-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
 }
 </style>

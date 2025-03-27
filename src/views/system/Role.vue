@@ -72,12 +72,6 @@ import TableSearch from '@/components/common/table-search.vue'
 import TableEdit from '@/components/common/table-edit.vue'
 import DialogTitle from '@/components/common/dialog-title.vue'
 
-interface ApiResponse<T> {
-  code: string
-  msg: string
-  data: T
-}
-
 defineOptions({ name: 'RoleManagementView' })
 
 // 查询条件

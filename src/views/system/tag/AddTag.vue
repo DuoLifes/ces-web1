@@ -1,25 +1,41 @@
 <!-- 新增标签页面 -->
 <template>
   <div class="page-container">
-    <div class="container">
-      <div class="form-header">
-        <div class="title-bar"></div>
-        <h2 class="title">新增标签</h2>
-      </div>
+    <div class="form-container">
       <el-form ref="formRef" :model="formData" :rules="rules" label-width="120px" class="tag-form">
-        <el-form-item label="标签名称" prop="name">
-          <el-input v-model="formData.name" placeholder="请输入标签名称" />
-        </el-form-item>
-        <el-form-item label="标签类别" prop="type">
-          <el-select v-model="formData.type" placeholder="请选择标签类别">
-            <el-option :value="0" label="基础标签" />
-            <el-option :value="1" label="高级标签" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="submitForm">提交</el-button>
-          <el-button @click="goBack">返回</el-button>
-        </el-form-item>
+        <div class="form-content">
+          <el-form-item label="标签名称：" prop="name" required>
+            <el-input
+              v-model="formData.name"
+              placeholder="请输入标签名称"
+              class="form-input"
+              clearable
+            />
+          </el-form-item>
+          <el-form-item label="标签类别：" prop="type" required>
+            <el-select v-model="formData.type" placeholder="请选择标签类别" class="form-select">
+              <el-option :value="1" label="基础标签" />
+              <el-option :value="2" label="高级标签" />
+            </el-select>
+          </el-form-item>
+        </div>
+
+        <div class="form-footer">
+          <div class="form-buttons">
+            <el-button type="primary" @click="submitForm">确定</el-button>
+            <el-popconfirm
+              title="新建数据未保存，是否确定返回？"
+              confirm-button-text="确定"
+              cancel-button-text="取消"
+              @confirm="goBack"
+              width="300"
+            >
+              <template #reference>
+                <el-button>返回</el-button>
+              </template>
+            </el-popconfirm>
+          </div>
+        </div>
       </el-form>
     </div>
   </div>
@@ -39,7 +55,7 @@ const formRef = ref<FormInstance>()
 // 表单数据
 const formData = reactive({
   name: '',
-  type: 0,
+  type: 1,
 })
 
 // 表单验证规则
@@ -85,31 +101,52 @@ const goBack = (): void => {
 </script>
 
 <style scoped>
-.form-header {
+.page-container {
+  height: calc(100vh - 120px); /* 减去头部和面包屑的高度 */
+  box-sizing: border-box;
   display: flex;
-  align-items: center;
-  margin-bottom: 20px;
+  flex-direction: column;
 }
 
-.title-bar {
-  width: 4px;
-  height: 20px;
-  background-color: var(--el-color-primary);
-  margin-right: 8px;
-}
-
-.title {
-  font-size: 18px;
-  font-weight: bold;
-  margin: 0;
+.form-container {
+  background-color: #fff;
+  border-radius: 4px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 50px;
 }
 
 .tag-form {
   max-width: 600px;
+  margin: 0 auto;
+  padding: 24px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.tag-form :deep(.el-input),
-.tag-form :deep(.el-select) {
-  width: 300px;
+.form-content {
+  flex: 1;
+  padding: 20px 0;
+}
+
+.form-footer {
+  border-top: 1px solid #dcdfe6;
+  padding: 16px 0;
+  background-color: #fff;
+  margin-top: auto; /* 将按钮区域推到底部 */
+}
+
+.form-select,
+.form-input {
+  width: 100%;
+}
+
+.form-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
 }
 </style>

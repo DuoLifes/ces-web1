@@ -253,12 +253,16 @@ const handleAdd = (): void => {
 
 // 编辑标签
 const handleEdit = (row: Tag): void => {
-  router.push(`/editTag/${row.id}`)
+  // 将完整的标签数据对象编码后通过查询参数传递到编辑页面
+  const tagData = encodeURIComponent(JSON.stringify(row))
+  router.push(`/editTag/${row.id}?tagData=${tagData}`)
 }
 
 // 配置标签局点
 const handleConfigure = (row: Tag): void => {
-  router.push(`/configTagCompany/${row.id}`)
+  // 将完整的标签数据对象编码后通过查询参数传递到配置局点页面
+  const tagData = encodeURIComponent(JSON.stringify(row))
+  router.push(`/configTagCompany/${row.id}?tagData=${tagData}`)
 }
 
 // 操作按钮
