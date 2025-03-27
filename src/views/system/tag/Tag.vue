@@ -158,8 +158,8 @@ const searchOpt = ref<SearchOption[]>([
 
 // 表格列配置
 const columns = ref([
-  { prop: 'name', label: '标签名称' },
-  { prop: 'typeValue', label: '标签类别' },
+  { prop: 'name', label: '标签名称', width: 280 },
+  { prop: 'typeValue', label: '标签类别', width: 240 },
   { prop: 'companyNames', label: '关联局点' },
   { prop: 'operator', label: '操作', width: 280 },
 ])
