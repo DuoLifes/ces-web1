@@ -13,10 +13,11 @@
             <TenantSelect
               v-model="formData.tenantId"
               placeholder="请选择运营商"
-              class="form-select"
+              class="form-select tenant-select"
               :showAll="false"
               :clearable="false"
               @update:modelValue="handleTenantChange"
+              ref="tenantSelectRef"
             />
           </el-form-item>
 
@@ -24,12 +25,13 @@
             <CompanySelect
               v-model="formData.companyId"
               placeholder="请选择局点"
-              class="form-select"
+              class="form-select company-select"
               :tenantId="formData.tenantId"
               :showAll="false"
               :clearable="false"
-              :autoClearOnTenantChange="true"
+              :autoClearOnTenantChange="false"
               @update:modelValue="handleCompanyChange"
+              ref="companySelectRef"
             />
           </el-form-item>
 
@@ -37,11 +39,12 @@
             <MarketingGroupMultiSelect
               v-model="formData.marketingGroups"
               placeholder="请选择营销组"
-              class="form-select"
+              class="form-select marketing-group-select"
               :companyId="formData.companyId"
               :showAll="false"
               :clearable="true"
-              :autoClearOnCompanyChange="true"
+              :autoClearOnCompanyChange="false"
+              ref="marketingGroupSelectRef"
             />
           </el-form-item>
 
@@ -55,10 +58,10 @@
           </el-form-item>
 
           <el-form-item label="用户名称：" prop="realName" required>
-            <el-input 
-              v-model="formData.realName" 
-              placeholder="请输入用户名称" 
-              class="form-input" 
+            <el-input
+              v-model="formData.realName"
+              placeholder="请输入用户名称"
+              class="form-input"
               clearable
             />
           </el-form-item>
@@ -117,7 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
@@ -133,6 +136,26 @@ const router = useRouter()
 const route = useRoute()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+// 初始化状态标记
+const isInitializing = ref(true)
+
+// 组件引用类型定义
+interface TenantSelectInstance {
+  refreshTenantList: () => void;
+}
+
+interface CompanySelectInstance {
+  getCompanyList: () => void;
+}
+
+interface MarketingGroupSelectInstance {
+  refreshMarketingGroupList: () => void;
+}
+
+// 组件引用
+const tenantSelectRef = ref<TenantSelectInstance | null>(null)
+const companySelectRef = ref<CompanySelectInstance | null>(null)
+const marketingGroupSelectRef = ref<MarketingGroupSelectInstance | null>(null)
 
 // 表单数据
 const formData = reactive({
@@ -162,7 +185,7 @@ const rules = {
     { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' },
   ],
   validityType: [{ required: true, message: '请选择有效期类型', trigger: 'change' }],
-  expireDate: [{ 
+  expireDate: [{
     validator: (rule: unknown, value: string, callback: (error?: Error) => void) => {
       if (formData.validityType === 'custom' && !value) {
         callback(new Error('请选择有效期'));
@@ -182,49 +205,83 @@ const disablePastDates = (date: Date) => {
 
 // 运营商变化处理
 const handleTenantChange = () => {
-  // 清空局点和营销组值
-  formData.companyId = ''
-  formData.marketingGroups = []
+  // 只在非初始化状态下清空依赖值
+  if (!isInitializing.value) {
+    formData.companyId = ''
+    formData.marketingGroups = []
+  }
 }
 
 // 局点变化处理
 const handleCompanyChange = () => {
-  // 清空营销组值
-  formData.marketingGroups = []
+  // 只在非初始化状态下清空依赖值
+  if (!isInitializing.value) {
+    formData.marketingGroups = []
+  }
 }
 
 // 从查询参数中初始化表单数据
-const initFormDataFromQuery = () => {
+const initFormDataFromQuery = async () => {
   try {
+    // 设置为初始化状态，避免触发级联清空
+    isInitializing.value = true
+
     const dataParam = route.query.data as string
     if (dataParam) {
       const accountData = JSON.parse(decodeURIComponent(dataParam))
       
-      // 设置基本信息
+      // 按顺序设置非级联字段
       formData.id = String(accountData.id)
-      formData.tenantId = String(accountData.tenantId)
-      formData.companyId = String(accountData.companyId)
-      formData.marketingGroups = accountData.marketingGroups ? 
-        accountData.marketingGroups.map((id: number) => String(id)) : []
       formData.username = accountData.username
       formData.realName = accountData.realName
-      formData.roleId = accountData.roleId ? String(accountData.roleId) : ''
+      formData.roleId = accountData.roleId ? accountData.roleId : ''
       formData.enabled = accountData.enabled === 1 || accountData.enabled === true
 
-      // 判断有效期类型
-      if (accountData.expireDate === '2099-12-31') {
+      // 设置有效期 - 修改判断条件以兼容带时间的日期格式
+      if (accountData.expireDate && accountData.expireDate.includes('2099-12-31')) {
         formData.validityType = 'permanent'
         formData.expireDate = ''
       } else {
         formData.validityType = 'custom'
         formData.expireDate = accountData.expireDate
       }
+
+      // 按特定顺序设置级联字段，保持原始数据类型
+      formData.tenantId = accountData.tenantId
+      formData.companyId = accountData.companyId
+      
+      // 确保营销组数据是数字ID数组
+      if (accountData.marketingGroups && Array.isArray(accountData.marketingGroups)) {
+        formData.marketingGroups = accountData.marketingGroups.map((id: number | string) => Number(id))
+      } else {
+        formData.marketingGroups = []
+      }
+
+      // 使用nextTick确保各组件已渲染，然后刷新组件数据
+      await nextTick()
+      
+      // 刷新租户选择器数据
+      if (tenantSelectRef.value?.refreshTenantList) {
+        tenantSelectRef.value.refreshTenantList()
+      }
+      
+      // 刷新公司选择器数据
+      if (companySelectRef.value?.getCompanyList) {
+        companySelectRef.value.getCompanyList()
+      }
+      
+      // 刷新营销组选择器数据
+      if (marketingGroupSelectRef.value?.refreshMarketingGroupList) {
+        marketingGroupSelectRef.value.refreshMarketingGroupList()
+      }
+      
+      // 初始化完成
+      isInitializing.value = false
     } else {
       ElMessage.error('获取账号信息失败')
       router.push('/account')
     }
-  } catch (error) {
-    console.error('解析账号数据失败:', error)
+  } catch {
     ElMessage.error('获取账号信息失败')
     router.push('/account')
   }
@@ -240,33 +297,35 @@ const handleSubmit = async () => {
         loading.value = true
         
         // 处理永久有效期
-        const finalExpireDate = formData.validityType === 'permanent' 
-          ? '2099-12-31' 
+        const finalExpireDate = formData.validityType === 'permanent'
+          ? '2099-12-31'
           : formData.expireDate;
         
-        // 处理提交数据
+        // 处理提交数据 - 确保类型正确转换
         const params = {
-          ...formData,
           id: Number(formData.id),
           tenantId: Number(formData.tenantId),
           companyId: Number(formData.companyId),
-          marketingGroups: formData.marketingGroups.map(id => Number(id)),
+          marketingGroups: Array.isArray(formData.marketingGroups) 
+            ? formData.marketingGroups.map(id => Number(id)) 
+            : [],
           roleId: formData.roleId ? Number(formData.roleId) : undefined,
           enabled: formData.enabled ? 1 : 0,
           expireDate: finalExpireDate,
+          username: formData.username,
+          realName: formData.realName
         }
 
         // 调用更新账号API
         const res = await updateAccount(params)
-        
+
         if (res.code === '00000') {
           ElMessage.success('更新账号成功')
           router.push('/account')
         } else {
           ElMessage.error(res.msg || '更新账号失败')
         }
-      } catch (error) {
-        console.error('更新账号失败:', error)
+      } catch {
         ElMessage.error('更新账号失败')
       } finally {
         loading.value = false
@@ -280,7 +339,7 @@ const handleBack = () => {
   router.push('/account')
 }
 
-// 组件挂载时从路由参数初始化数据
+// 组件挂载时初始化数据
 onMounted(() => {
   initFormDataFromQuery()
 })
@@ -389,4 +448,4 @@ onMounted(() => {
   top: 100%;
   left: 50px; /* 调整为与日期选择器前缘对齐，再向右移动4px */
 }
-</style> 
+</style>

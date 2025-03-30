@@ -85,8 +85,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { Component } from 'vue'
 import { Edit, Delete } from '@element-plus/icons-vue'
-import type { FormOption } from '@/types/form-option'
-import type { Account, AccountQuery } from '@/api/account'
+import type { Account, AccountQuery } from '@/types/account'
 
 // 导入组件
 import TableCustom from '@/components/common/table-custom.vue'
@@ -233,7 +232,18 @@ const columns = ref([
   { prop: 'username', label: '用户账号' },
   { prop: 'realName', label: '用户名称' },
   { prop: 'roleName', label: '角色名称' },
-  { prop: 'marketingGroupNames', label: '营销组', showOverflowTooltip: true },
+  { 
+    prop: 'marketingGroupNames', 
+    label: '营销组', 
+    showOverflowTooltip: true,
+    formatter: (row: unknown) => {
+      const accountRow = row as Account;
+      if (Array.isArray(accountRow.marketingGroupNames)) {
+        return accountRow.marketingGroupNames.join(', ');
+      }
+      return accountRow.marketingGroupNames || '';
+    }
+  },
   { prop: 'enabled', label: '是否启用', slot: 'enabled' },
   { prop: 'expireDate', label: '有效期至' },
   { prop: 'expired', label: '是否到期', slot: 'expired' },
@@ -428,6 +438,7 @@ const handleEdit = (row: Account): void => {
     tenantId: row.tenantId,
     companyId: row.companyId,
     marketingGroups: row.marketingGroups || [],
+    marketingGroupNames: row.marketingGroupNames || [],
     username: row.username,
     realName: row.realName,
     roleId: row.roleId,

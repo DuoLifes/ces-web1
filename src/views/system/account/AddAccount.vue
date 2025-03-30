@@ -210,7 +210,9 @@ const handleSubmit = async () => {
           ...formData,
           tenantId: formData.tenantId ? Number(formData.tenantId) : undefined,
           companyId: formData.companyId ? Number(formData.companyId) : undefined,
-          marketingGroups: formData.marketingGroups.map(id => Number(id)),
+          marketingGroups: Array.isArray(formData.marketingGroups) 
+            ? formData.marketingGroups.map(id => Number(id)) 
+            : [],
           roleId: formData.roleId ? Number(formData.roleId) : undefined,
           enabled: formData.enabled ? 1 : 0,
           expireDate: finalExpireDate,

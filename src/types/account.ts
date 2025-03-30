@@ -46,8 +46,8 @@ export interface Account {
   roleName: string
   /** 营销组ID列表 */
   marketingGroups: number[]
-  /** 营销组名称（逗号分隔） */
-  marketingGroupNames: string
+  /** 营销组名称数组 */
+  marketingGroupNames: string[]
   /** 是否启用 */
   enabled: number | boolean
   /** 有效期至 */
