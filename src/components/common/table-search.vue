@@ -157,7 +157,7 @@ const handleInputChange = (item: FormOptionList, value: string): void => {
 .form-items {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(var(--form-items-per-row), 1fr);
+  grid-template-columns: repeat(var(--form-items-per-row), minmax(0, 1fr));
   gap: 20px;
   align-items: start;
   padding-top: 15px;
@@ -169,6 +169,7 @@ const handleInputChange = (item: FormOptionList, value: string): void => {
   display: flex;
   align-items: center;
   min-height: 32px;
+  max-width: 100%;
 }
 
 :deep(.el-form-item__label) {
@@ -183,17 +184,30 @@ const handleInputChange = (item: FormOptionList, value: string): void => {
   flex: 1;
   margin-left: 0 !important;
   line-height: 32px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 :deep(.el-input),
 :deep(.el-select),
 :deep(.el-date-picker) {
   width: 100%;
+  max-width: 100%;
+}
+
+:deep(.el-select) {
+  width: 100% !important;
+}
+
+:deep(.el-select .el-input) {
+  width: 100% !important;
 }
 
 :deep(.el-input__wrapper),
 :deep(.el-select__wrapper) {
   line-height: 32px;
+  width: 100%;
 }
 
 .button-wrapper {
@@ -208,5 +222,11 @@ const handleInputChange = (item: FormOptionList, value: string): void => {
   display: flex;
   gap: 10px;
   padding-left: 100px;
+}
+
+:deep(.el-select__wrapper),
+:deep(.el-input__wrapper) {
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 </style>

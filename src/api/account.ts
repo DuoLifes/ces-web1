@@ -54,20 +54,6 @@ export const deleteAccount = (id: number): Promise<ApiResponse<null>> => {
 }
 
 /**
- * 修改账号状态（启用/禁用）
- * @param id - 账号ID
- * @param enabled - 启用状态
- * @returns 操作结果
- */
-export const toggleAccountStatus = (id: number, enabled: boolean): Promise<ApiResponse<null>> => {
-  return request({
-    url: `/ces/account/status`,
-    method: 'put',
-    data: { id, enabled: enabled ? 1 : 0 },
-  })
-}
-
-/**
  * 重置账号密码
  * @param id - 账号ID
  * @returns 操作结果

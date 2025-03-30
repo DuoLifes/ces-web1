@@ -58,9 +58,14 @@
 
         <!-- 自定义是否启用列 -->
         <template #enabled="{ rows }">
-          <el-tag :type="rows.enabled === 1 || rows.enabled === true ? 'success' : 'danger'">
-            {{ rows.enabled === 1 || rows.enabled === true ? '是' : '否' }}
-          </el-tag>
+          <div class="switch-cell">
+            <el-switch
+              v-model="rows.enabled"
+              :active-value="1"
+              :inactive-value="0"
+              class="status-switch"
+            />
+          </div>
         </template>
 
         <!-- 自定义是否到期列 -->
@@ -71,32 +76,12 @@
         </template>
       </TableCustom>
     </div>
-
-    <!-- 账号编辑弹窗 -->
-    <el-dialog
-      v-model="visible"
-      width="600px"
-      destroy-on-close
-      :close-on-click-modal="false"
-      @close="closeDialog"
-    >
-      <template #header>
-        <DialogTitle :title="isEdit ? '编辑账号' : '新增账号'" />
-      </template>
-      <TableEdit
-        v-model:form-data="formData"
-        :options="formOptions"
-        :edit="isEdit"
-        :update="handleUpdate"
-        @cancel="closeDialog"
-        @update:form-data="handleFormDataUpdate"
-      />
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, markRaw, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { Component } from 'vue'
 import { Edit, Delete } from '@element-plus/icons-vue'
@@ -106,8 +91,6 @@ import type { Account, AccountQuery } from '@/api/account'
 // 导入组件
 import TableCustom from '@/components/common/table-custom.vue'
 import TableSearch from '@/components/common/table-search.vue'
-import TableEdit from '@/components/common/table-edit.vue'
-import DialogTitle from '@/components/common/dialog-title.vue'
 import TenantSelect from '@/components/tenant/TenantSelect.vue'
 import CompanySelect from '@/components/company/CompanySelect.vue'
 import MarketingGroupMultiSelect from '@/components/marketing-group/MarketingGroupMultiSelect.vue'
@@ -115,13 +98,14 @@ import MarketingGroupMultiSelect from '@/components/marketing-group/MarketingGro
 // 导入API
 import {
   fetchAccountData,
-  addAccount,
-  updateAccount,
-  deleteAccount,
+  deleteAccount
 } from '@/api/account'
 
 // 设置组件名称
 defineOptions({ name: 'AccountManagementView' })
+
+// 获取路由
+const router = useRouter()
 
 // 查询条件
 const query = reactive({
@@ -143,11 +127,6 @@ const page = reactive({
 
 // 表格数据
 const tableData = ref<Account[]>([])
-
-// 弹窗控制
-const visible = ref(false)
-const isEdit = ref(false)
-const formData = ref<Partial<Account>>({})
 
 // 表单引用
 const tableSearchRef = ref()
@@ -264,100 +243,12 @@ const columns = ref([
   { prop: 'operator', label: '操作', fixed: 'right', slot: 'operator' },
 ])
 
-// 表单配置
-const formOptions = ref<FormOption>({
-  labelWidth: '120px',
-  span: 24,
-  list: [
-    {
-      type: 'custom',
-      label: '运营商',
-      prop: 'tenantId',
-      required: true,
-      component: markRaw(TenantSelect),
-      props: {
-        showAll: false,
-        clearable: false,
-        placeholder: '请选择运营商',
-      },
-    },
-    {
-      type: 'custom',
-      label: '局点名称',
-      prop: 'companyId',
-      placeholder: '请选择局点',
-      required: true,
-      component: markRaw(CompanySelect),
-      props: {
-        tenantId: '', // 会在设置formData时动态更新
-        showAll: false,
-        clearable: false,
-        placeholder: '请选择局点',
-        autoClearOnTenantChange: true,
-      },
-      dependOn: 'tenantId', // 添加依赖关系
-    },
-    {
-      type: 'custom',
-      label: '营销组',
-      prop: 'marketingGroups',
-      placeholder: '请选择营销组',
-      required: true,
-      component: markRaw(MarketingGroupMultiSelect),
-      props: {
-        companyId: '', // 会在设置formData时动态更新
-        showAll: false,
-        clearable: false,
-        placeholder: '请选择营销组',
-        autoClearOnCompanyChange: true,
-      },
-      dependOn: 'companyId', // 添加依赖关系
-    },
-    {
-      type: 'input',
-      label: '用户账号',
-      prop: 'username',
-      placeholder: '请输入用户账号',
-      required: true,
-    },
-    {
-      type: 'input',
-      label: '用户名称',
-      prop: 'realName',
-      placeholder: '请输入用户名称',
-      required: true,
-    },
-    {
-      type: 'switch',
-      label: '是否启用',
-      prop: 'enabled',
-      required: false,
-      defaultValue: true,
-    },
-    {
-      type: 'date',
-      label: '有效期至',
-      prop: 'expireDate',
-      placeholder: '请选择有效期',
-      required: true,
-    },
-  ],
-})
-
 // 更新CompanySelect组件的tenantId
 const updateCompanySelectTenantId = (tenantId: number | string): void => {
   // 更新搜索表单中的CompanySelect组件
   const companyOption = searchOpt.value.find((opt) => opt.prop === 'companyId')
   if (companyOption?.props) {
     companyOption.props.tenantId = tenantId
-  }
-
-  // 更新编辑表单中的CompanySelect组件
-  if (formOptions.value.list) {
-    const formCompanyOption = formOptions.value.list.find((opt) => opt.prop === 'companyId')
-    if (formCompanyOption?.props) {
-      formCompanyOption.props.tenantId = tenantId
-    }
   }
 }
 
@@ -367,14 +258,6 @@ const updateMarketingGroupSelectCompanyId = (companyId: number | string): void =
   const marketingGroupOption = searchOpt.value.find((opt) => opt.prop === 'marketingGroups')
   if (marketingGroupOption?.props) {
     marketingGroupOption.props.companyId = companyId
-  }
-
-  // 更新编辑表单中的MarketingGroupMultiSelect组件
-  if (formOptions.value.list) {
-    const formMarketingGroupOption = formOptions.value.list.find((opt) => opt.prop === 'marketingGroups')
-    if (formMarketingGroupOption?.props) {
-      formMarketingGroupOption.props.companyId = companyId
-    }
   }
 }
 
@@ -389,7 +272,7 @@ const getData = async (): Promise<void> => {
       tenantId: formValues.tenantId ? Number(formValues.tenantId) : undefined,
       companyId: formValues.companyId ? Number(formValues.companyId) : undefined,
       marketingGroups: formValues.marketingGroups && formValues.marketingGroups.length > 0
-        ? formValues.marketingGroups.map(id => Number(id))
+        ? formValues.marketingGroups.map((id: number | string) => Number(id))
         : undefined,
       username: formValues.username || undefined,
       realName: formValues.realName || undefined,
@@ -483,7 +366,7 @@ const handleQueryUpdate = (newQuery: Record<string, unknown>): void => {
     if (newQuery.expired !== undefined) {
       query.expired = Number(newQuery.expired)
     }
-    
+
     // 其他属性直接复制
     if (newQuery.tenantId !== undefined) query.tenantId = newQuery.tenantId as string
     if (newQuery.companyId !== undefined) query.companyId = newQuery.companyId as string
@@ -520,44 +403,6 @@ const handleQueryUpdate = (newQuery: Record<string, unknown>): void => {
   }
 }
 
-// 处理表单数据更新
-const handleFormDataUpdate = (newFormData: Record<string, unknown>): void => {
-  // 在运营商变化时重点处理
-  if (newFormData.tenantId !== undefined && newFormData.tenantId !== formData.value.tenantId) {
-    console.log('运营商变化:', {
-      old: formData.value.tenantId,
-      new: newFormData.tenantId,
-    })
-
-    // 更新CompanySelect组件的tenantId
-    updateCompanySelectTenantId(newFormData.tenantId as string | number)
-
-    // 清空局点和营销组值
-    formData.value.companyId = ''
-    formData.value.marketingGroups = []
-
-    // 清空营销组选择器的companyId
-    updateMarketingGroupSelectCompanyId('')
-  }
-
-  // 在局点变化时处理
-  if (newFormData.companyId !== undefined && newFormData.companyId !== formData.value.companyId) {
-    console.log('局点变化:', {
-      old: formData.value.companyId,
-      new: newFormData.companyId,
-    })
-
-    // 更新MarketingGroupMultiSelect组件的companyId
-    updateMarketingGroupSelectCompanyId(newFormData.companyId as string | number)
-
-    // 清空营销组值
-    formData.value.marketingGroups = []
-  }
-
-  // 将表单数据同步到formData
-  Object.assign(formData.value, newFormData)
-}
-
 // 页码变化
 const changePage = (val: number): void => {
   page.index = val
@@ -573,32 +418,12 @@ const handleSizeChange = (val: number): void => {
 
 // 新增账号
 const handleAdd = (): void => {
-  isEdit.value = false
-  // 清空CompanySelect组件的tenantId和MarketingGroupMultiSelect组件的companyId
-  updateCompanySelectTenantId('')
-  updateMarketingGroupSelectCompanyId('')
-  // 设置空的formData
-  formData.value = {
-    tenantId: '',
-    companyId: '',
-    marketingGroups: [],
-    username: '',
-    realName: '',
-    roleId: '',
-    enabled: true,
-    expireDate: '',
-  }
-  visible.value = true
+  router.push('/add-account')
 }
 
 // 编辑账号
 const handleEdit = (row: Account): void => {
-  isEdit.value = true
-  // 更新CompanySelect组件的tenantId和MarketingGroupMultiSelect组件的companyId
-  updateCompanySelectTenantId(row.tenantId)
-  updateMarketingGroupSelectCompanyId(row.companyId)
-  // 设置formData
-  formData.value = {
+  const accountData = {
     id: row.id,
     tenantId: row.tenantId,
     companyId: row.companyId,
@@ -606,10 +431,17 @@ const handleEdit = (row: Account): void => {
     username: row.username,
     realName: row.realName,
     roleId: row.roleId,
-    enabled: row.enabled === 1 || row.enabled === true,
+    enabled: row.enabled,
     expireDate: row.expireDate,
   }
-  visible.value = true
+
+  // 通过路由参数传递数据
+  router.push({
+    path: `/edit-account/${row.id}`,
+    query: {
+      data: encodeURIComponent(JSON.stringify(accountData))
+    }
+  })
 }
 
 // 通用操作按钮处理函数
@@ -640,46 +472,6 @@ const handleDelete = async (row: Account): Promise<void> => {
   }
 }
 
-// 更新账号
-const handleUpdate = async (): Promise<boolean> => {
-  try {
-    loading.value = true
-
-    // 表单数据处理和验证
-    const params = {
-      ...formData.value,
-      enabled: formData.value.enabled === true || formData.value.enabled === 1 ? 1 : 0,
-    }
-
-    // 调用API
-    const res = isEdit.value
-      ? await updateAccount(params)
-      : await addAccount(params)
-
-    if (res.code === '00000') {
-      ElMessage.success(isEdit.value ? '编辑成功' : '新增成功')
-      visible.value = false
-      getData()
-      return true
-    } else {
-      ElMessage.error(res.msg || (isEdit.value ? '编辑失败' : '新增失败'))
-      return false
-    }
-  } catch (error) {
-    console.error(isEdit.value ? '编辑出错:' : '新增出错:', error)
-    ElMessage.error(isEdit.value ? '编辑失败' : '新增失败')
-    return false
-  } finally {
-    loading.value = false
-  }
-}
-
-// 关闭弹窗
-const closeDialog = (): void => {
-  visible.value = false
-  formData.value = {}
-}
-
 // 组件挂载时获取数据
 onMounted(() => {
   getData()
@@ -690,5 +482,45 @@ onMounted(() => {
 .operate-btns {
   display: flex;
   gap: 8px;
+}
+
+.status-switch {
+  --el-switch-on-color: #13ce66;
+  --el-switch-off-color: #ff4949;
+}
+
+.switch-cell {
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+/* 设置表格行高与其他页面一致 */
+:deep(.el-table__row) {
+  height: 41.38px !important; /* 与其他页面保持一致的高度 */
+}
+
+:deep(.el-table__cell) {
+  padding-top: 0;
+  padding-bottom: 0;
+  height: 41.38px;
+}
+
+/* 调整标签样式适应固定的单元格高度 */
+:deep(.el-tag) {
+  margin: 0;
+  padding: 0 8px;
+  height: 24px;
+  line-height: 24px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* 添加全局调整，确保单元格内容垂直居中 */
+:deep(.el-table__body td) {
+  vertical-align: middle;
 }
 </style>

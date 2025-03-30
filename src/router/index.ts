@@ -92,6 +92,26 @@ const publicRoutes: RouteRecordRaw[] = [
         component: () => import('../views/system/account/Account.vue'),
       },
       {
+        path: 'add-account',
+        name: 'addAccount',
+        meta: {
+          title: '新增账号',
+          permiss: '1_6_1',
+          parentPath: '/account',
+        },
+        component: () => import('../views/system/account/AddAccount.vue'),
+      },
+      {
+        path: 'edit-account/:id',
+        name: 'editAccount',
+        meta: {
+          title: '编辑账号',
+          permiss: '1_6_2',
+          parentPath: '/account',
+        },
+        component: () => import('../views/system/account/EditAccount.vue'),
+      },
+      {
         path: 'tag',
         name: 'tag',
         meta: {
