@@ -82,55 +82,15 @@ const publicRoutes: RouteRecordRaw[] = [
         },
         component: () => import('../views/system/Role.vue'),
       },
-      // {
-      //   path: 'account',
-      //   name: 'account',
-      //   meta: {
-      //     title: '账号管理',
-      //     permiss: '1_6',
-      //   },
-      //   component: () => import('../views/system/account/Account.vue'),
-      // },
-      // {
-      //   path: 'addAccount',
-      //   name: 'addAccount',
-      //   meta: {
-      //     title: '新建账号',
-      //     permiss: '1_6_1',
-      //     parentPath: '/account',
-      //   },
-      //   component: () => import('../views/system/account/AddAccount.vue'),
-      // },
-      // {
-      //   path: 'editAccount/:id',
-      //   name: 'editAccount',
-      //   meta: {
-      //     title: '编辑账号',
-      //     permiss: '1_6_2',
-      //     parentPath: '/account',
-      //   },
-      //   component: () => import('../views/system/account/EditAccount.vue'),
-      // },
-      // {
-      //   path: 'configAccountRole/:id',
-      //   name: 'configAccountRole',
-      //   meta: {
-      //     title: '角色配置',
-      //     permiss: '1_6_3',
-      //     parentPath: '/account',
-      //   },
-      //   component: () => import('../views/system/account/ConfigAccountRole.vue'),
-      // },
-      // {
-      //   path: 'configAccountMarketingGroup/:id',
-      //   name: 'configAccountMarketingGroup',
-      //   meta: {
-      //     title: '营销组配置',
-      //     permiss: '1_6_4',
-      //     parentPath: '/account',
-      //   },
-      //   component: () => import('../views/system/account/ConfigAccountMarketingGroup.vue'),
-      // },
+      {
+        path: 'account',
+        name: 'account',
+        meta: {
+          title: '账号管理',
+          permiss: '1_6',
+        },
+        component: () => import('../views/system/account/Account.vue'),
+      },
       {
         path: 'tag',
         name: 'tag',
@@ -170,63 +130,6 @@ const publicRoutes: RouteRecordRaw[] = [
         },
         component: () => import('../views/system/tag/ConfigTagCompany.vue'),
       },
-      // {
-      //   path: 'strategy',
-      //   name: 'strategy',
-      //   meta: {
-      //     title: '策略管理',
-      //     permiss: '1_8',
-      //   },
-      //   component: () => import('../views/system/strategy/Strategy.vue'),
-      // },
-      // {
-      //   path: 'addStrategy',
-      //   name: 'addStrategy',
-      //   meta: {
-      //     title: '新建策略',
-      //     permiss: '1_8_1',
-      //     parentPath: '/strategy',
-      //   },
-      //   component: () => import('../views/system/strategy/AddStrategy.vue'),
-      // },
-      // {
-      //   path: 'editStrategy/:id',
-      //   name: 'editStrategy',
-      //   meta: {
-      //     title: '编辑策略',
-      //     permiss: '1_8_2',
-      //     parentPath: '/strategy',
-      //   },
-      //   component: () => import('../views/system/strategy/EditStrategy.vue'),
-      // },
-      // {
-      //   path: 'configStrategyCompany/:id',
-      //   name: 'configStrategyCompany',
-      //   meta: {
-      //     title: '局点配置',
-      //     permiss: '1_8_3',
-      //     parentPath: '/strategy',
-      //   },
-      //   component: () => import('../views/system/strategy/ConfigStrategyCompany.vue'),
-      // },
-      // {
-      //   path: 'prospect',
-      //   name: 'prospect',
-      //   meta: {
-      //     title: '潜客管理',
-      //     permiss: '2_1',
-      //   },
-      //   component: () => import('../views/dataManager/prospect/Prospect.vue'),
-      // },
-      // {
-      //   path: 'data-allocation',
-      //   name: 'data-allocation',
-      //   meta: {
-      //     title: '数据分配',
-      //     permiss: '2_2',
-      //   },
-      //   component: () => import('../views/dataManager/dataAllocation/DataAllocation.vue'),
-      // },
     ],
   },
   {
