@@ -112,6 +112,16 @@ const publicRoutes: RouteRecordRaw[] = [
         component: () => import('../views/system/account/EditAccount.vue'),
       },
       {
+        path: 'configAccountRole/:id',
+        name: 'configAccountRole',
+        meta: {
+          title: '角色配置',
+          permiss: '1_6_3',
+          parentPath: '/account',
+        },
+        component: () => import('../views/system/account/ConfigAccountRole.vue'),
+      },
+      {
         path: 'tag',
         name: 'tag',
         meta: {

@@ -6,16 +6,16 @@ export interface AccountQuery {
   tenantId?: number
   /** 局点ID */
   companyId?: number
-  /** 营销组ID列表 */
-  marketingGroups?: number[]
+  /** 班组ID */
+  groupId?: number
   /** 用户账号 */
   username?: string
   /** 用户名称 */
-  realName?: string
+  name?: string
   /** 是否启用 */
-  enabled?: boolean
+  status?: number
   /** 是否到期 */
-  expired?: boolean
+  expire?: number
   /** 页码 */
   pageNo: number
   /** 每页条数 */
@@ -39,23 +39,23 @@ export interface Account {
   /** 用户账号 */
   username: string
   /** 用户名称 */
-  realName: string
-  /** 角色ID */
-  roleId: number
-  /** 角色名称 */
-  roleName: string
-  /** 营销组ID列表 */
-  marketingGroups: number[]
-  /** 营销组名称数组 */
-  marketingGroupNames: string[]
+  name: string
+  /** 角色ID列表 */
+  roleIds: number[]
+  /** 角色名称列表 */
+  roleNames: string[]
+  /** 班组ID列表 */
+  groupIds: number[]
+  /** 班组名称列表 */
+  groupNames: string[]
   /** 是否启用 */
-  enabled: number | boolean
+  status: number
   /** 有效期至 */
-  expireDate: string
+  effectiveDay: string
   /** 是否到期 */
-  expired: number | boolean
+  expire: number
   /** 创建人 */
-  creator: string
+  operatorName: string
   /** 创建时间 */
   createTime: string
   /** 更新时间 */
@@ -102,4 +102,4 @@ export interface ApiResponse<T> {
   msg: string
   /** 响应数据 */
   data: T
-} 
+}

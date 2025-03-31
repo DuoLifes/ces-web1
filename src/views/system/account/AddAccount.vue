@@ -55,10 +55,10 @@
           </el-form-item>
 
           <el-form-item label="用户名称：" prop="realName" required>
-            <el-input 
-              v-model="formData.realName" 
-              placeholder="请输入用户名称" 
-              class="form-input" 
+            <el-input
+              v-model="formData.realName"
+              placeholder="请输入用户名称"
+              class="form-input"
               clearable
             />
           </el-form-item>
@@ -73,7 +73,11 @@
                 <el-radio :value="'permanent'">永久</el-radio>
                 <el-radio :value="'custom'">自定义</el-radio>
               </el-radio-group>
-              <el-form-item v-if="formData.validityType === 'custom'" prop="expireDate" class="date-form-item">
+              <el-form-item
+                v-if="formData.validityType === 'custom'"
+                prop="expireDate"
+                class="date-form-item"
+              >
                 <template #default>
                   <div class="validity-date">
                     <span class="validity-text">截止到</span>
@@ -160,17 +164,19 @@ const rules = {
     { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' },
   ],
   validityType: [{ required: true, message: '请选择有效期类型', trigger: 'change' }],
-  expireDate: [{ 
-    validator: (rule: unknown, value: string, callback: (error?: Error) => void) => {
-      if (formData.validityType === 'custom' && !value) {
-        callback(new Error('请选择有效期'));
-      } else {
-        callback();
-      }
+  expireDate: [
+    {
+      validator: (rule: unknown, value: string, callback: (error?: Error) => void) => {
+        if (formData.validityType === 'custom' && !value) {
+          callback(new Error('请选择有效期'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'change',
+      required: true,
     },
-    trigger: 'change',
-    required: true
-  }],
+  ],
 }
 
 // 禁用过去的日期
@@ -199,19 +205,18 @@ const handleSubmit = async () => {
     if (valid) {
       try {
         loading.value = true
-        
+
         // 处理永久有效期
-        const finalExpireDate = formData.validityType === 'permanent' 
-          ? '2099-12-31' 
-          : formData.expireDate;
-        
+        const finalExpireDate =
+          formData.validityType === 'permanent' ? '2099-12-31' : formData.expireDate
+
         // 处理提交数据
         const params = {
           ...formData,
           tenantId: formData.tenantId ? Number(formData.tenantId) : undefined,
           companyId: formData.companyId ? Number(formData.companyId) : undefined,
-          marketingGroups: Array.isArray(formData.marketingGroups) 
-            ? formData.marketingGroups.map(id => Number(id)) 
+          marketingGroups: Array.isArray(formData.marketingGroups)
+            ? formData.marketingGroups.map((id) => Number(id))
             : [],
           roleId: formData.roleId ? Number(formData.roleId) : undefined,
           enabled: formData.enabled ? 1 : 0,
@@ -220,7 +225,7 @@ const handleSubmit = async () => {
 
         // 调用创建账号API
         const res = await addAccount(params)
-        
+
         if (res.code === '00000') {
           ElMessage.success('创建账号成功')
           router.push('/account')
@@ -346,4 +351,4 @@ const handleBack = () => {
   top: 100%;
   left: 50px; /* 调整为与日期选择器前缘对齐，再向右移动4px */
 }
-</style> 
+</style>

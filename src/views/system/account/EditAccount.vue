@@ -76,7 +76,11 @@
                 <el-radio :value="'permanent'">永久</el-radio>
                 <el-radio :value="'custom'">自定义</el-radio>
               </el-radio-group>
-              <el-form-item v-if="formData.validityType === 'custom'" prop="expireDate" class="date-form-item">
+              <el-form-item
+                v-if="formData.validityType === 'custom'"
+                prop="expireDate"
+                class="date-form-item"
+              >
                 <template #default>
                   <div class="validity-date">
                     <span class="validity-text">截止到</span>
@@ -141,15 +145,15 @@ const isInitializing = ref(true)
 
 // 组件引用类型定义
 interface TenantSelectInstance {
-  refreshTenantList: () => void;
+  refreshTenantList: () => void
 }
 
 interface CompanySelectInstance {
-  getCompanyList: () => void;
+  getCompanyList: () => void
 }
 
 interface MarketingGroupSelectInstance {
-  refreshMarketingGroupList: () => void;
+  refreshMarketingGroupList: () => void
 }
 
 // 组件引用
@@ -185,17 +189,19 @@ const rules = {
     { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' },
   ],
   validityType: [{ required: true, message: '请选择有效期类型', trigger: 'change' }],
-  expireDate: [{
-    validator: (rule: unknown, value: string, callback: (error?: Error) => void) => {
-      if (formData.validityType === 'custom' && !value) {
-        callback(new Error('请选择有效期'));
-      } else {
-        callback();
-      }
+  expireDate: [
+    {
+      validator: (rule: unknown, value: string, callback: (error?: Error) => void) => {
+        if (formData.validityType === 'custom' && !value) {
+          callback(new Error('请选择有效期'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'change',
+      required: true,
     },
-    trigger: 'change',
-    required: true
-  }],
+  ],
 }
 
 // 禁用过去的日期
@@ -229,7 +235,7 @@ const initFormDataFromQuery = async () => {
     const dataParam = route.query.data as string
     if (dataParam) {
       const accountData = JSON.parse(decodeURIComponent(dataParam))
-      
+
       // 按顺序设置非级联字段
       formData.id = String(accountData.id)
       formData.username = accountData.username
@@ -249,32 +255,34 @@ const initFormDataFromQuery = async () => {
       // 按特定顺序设置级联字段，保持原始数据类型
       formData.tenantId = accountData.tenantId
       formData.companyId = accountData.companyId
-      
+
       // 确保营销组数据是数字ID数组
       if (accountData.marketingGroups && Array.isArray(accountData.marketingGroups)) {
-        formData.marketingGroups = accountData.marketingGroups.map((id: number | string) => Number(id))
+        formData.marketingGroups = accountData.marketingGroups.map((id: number | string) =>
+          Number(id),
+        )
       } else {
         formData.marketingGroups = []
       }
 
       // 使用nextTick确保各组件已渲染，然后刷新组件数据
       await nextTick()
-      
+
       // 刷新租户选择器数据
       if (tenantSelectRef.value?.refreshTenantList) {
         tenantSelectRef.value.refreshTenantList()
       }
-      
+
       // 刷新公司选择器数据
       if (companySelectRef.value?.getCompanyList) {
         companySelectRef.value.getCompanyList()
       }
-      
+
       // 刷新营销组选择器数据
       if (marketingGroupSelectRef.value?.refreshMarketingGroupList) {
         marketingGroupSelectRef.value.refreshMarketingGroupList()
       }
-      
+
       // 初始化完成
       isInitializing.value = false
     } else {
@@ -295,25 +303,24 @@ const handleSubmit = async () => {
     if (valid) {
       try {
         loading.value = true
-        
+
         // 处理永久有效期
-        const finalExpireDate = formData.validityType === 'permanent'
-          ? '2099-12-31'
-          : formData.expireDate;
-        
+        const finalExpireDate =
+          formData.validityType === 'permanent' ? '2099-12-31' : formData.expireDate
+
         // 处理提交数据 - 确保类型正确转换
         const params = {
           id: Number(formData.id),
           tenantId: Number(formData.tenantId),
           companyId: Number(formData.companyId),
-          marketingGroups: Array.isArray(formData.marketingGroups) 
-            ? formData.marketingGroups.map(id => Number(id)) 
+          marketingGroups: Array.isArray(formData.marketingGroups)
+            ? formData.marketingGroups.map((id) => Number(id))
             : [],
           roleId: formData.roleId ? Number(formData.roleId) : undefined,
           enabled: formData.enabled ? 1 : 0,
           expireDate: finalExpireDate,
           username: formData.username,
-          realName: formData.realName
+          realName: formData.realName,
         }
 
         // 调用更新账号API

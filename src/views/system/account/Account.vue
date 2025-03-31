@@ -26,7 +26,6 @@
         :pageSizes="[10, 15, 20]"
         :changePage="changePage"
         :sizeChange="handleSizeChange"
-        :operateFunc="handleOperate"
         :showView="false"
         :showEdit="false"
         :showDelete="false"
@@ -42,36 +41,35 @@
               编辑
             </el-button>
 
-            <!-- 删除按钮 -->
-            <el-popconfirm
-              title="确认要删除此条数据吗？"
-              confirm-button-text="确定"
-              cancel-button-text="取消"
-              @confirm="handleDelete(rows)"
+            <!-- 角色配置按钮 -->
+            <el-button
+              class="light-blue-btn"
+              size="small"
+              :icon="Setting"
+              @click="handleConfigRole(rows)"
             >
-              <template #reference>
-                <el-button class="light-red-btn" size="small" :icon="Delete">删除</el-button>
-              </template>
-            </el-popconfirm>
+              角色配置
+            </el-button>
           </div>
         </template>
 
-        <!-- 自定义是否启用列 -->
-        <template #enabled="{ rows }">
+        <!-- 自定义状态列 -->
+        <template #status="{ rows }">
           <div class="switch-cell">
             <el-switch
-              v-model="rows.enabled"
+              v-model="rows.status"
               :active-value="1"
               :inactive-value="0"
               class="status-switch"
+              @click="handleStatusChange(rows)"
             />
           </div>
         </template>
 
         <!-- 自定义是否到期列 -->
-        <template #expired="{ rows }">
-          <el-tag :type="rows.expired === 1 || rows.expired === true ? 'danger' : 'success'">
-            {{ rows.expired === 1 || rows.expired === true ? '已到期' : '未到期' }}
+        <template #expire="{ rows }">
+          <el-tag :type="rows.expire === 2 ? 'danger' : 'success'">
+            {{ rows.expire === 2 ? '已到期' : '未到期' }}
           </el-tag>
         </template>
       </TableCustom>
@@ -84,7 +82,7 @@ import { ref, reactive, markRaw, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { Component } from 'vue'
-import { Edit, Delete } from '@element-plus/icons-vue'
+import { Edit, Setting } from '@element-plus/icons-vue'
 import type { Account, AccountQuery } from '@/types/account'
 
 // 导入组件
@@ -95,10 +93,7 @@ import CompanySelect from '@/components/company/CompanySelect.vue'
 import MarketingGroupMultiSelect from '@/components/marketing-group/MarketingGroupMultiSelect.vue'
 
 // 导入API
-import {
-  fetchAccountData,
-  deleteAccount
-} from '@/api/account'
+import { fetchAccountData, updateAccountStatus } from '@/api/account'
 
 // 设置组件名称
 defineOptions({ name: 'AccountManagementView' })
@@ -110,11 +105,11 @@ const router = useRouter()
 const query = reactive({
   tenantId: '',
   companyId: '',
-  marketingGroups: [] as Array<number | string>,
+  groupIds: [] as Array<number | string>,
   username: '',
-  realName: '',
-  enabled: 0,
-  expired: 0,
+  name: '',
+  status: 2,
+  expire: 0,
 })
 
 // 分页配置
@@ -180,7 +175,7 @@ const searchOpt = ref<SearchOption[]>([
   {
     type: 'custom',
     label: '营销组：',
-    prop: 'marketingGroups',
+    prop: 'groupIds',
     placeholder: '请选择营销组',
     component: markRaw(MarketingGroupMultiSelect),
     props: {
@@ -198,29 +193,29 @@ const searchOpt = ref<SearchOption[]>([
   {
     type: 'input',
     label: '用户名称：',
-    prop: 'realName',
+    prop: 'name',
     placeholder: '请输入用户名称',
   },
   {
     type: 'select',
-    label: '是否启用：',
-    prop: 'enabled',
-    placeholder: '请选择是否启用',
+    label: '状态：',
+    prop: 'status',
+    placeholder: '请选择状态',
     opts: [
-      { value: 0, label: '全部' },
-      { value: 1, label: '是' },
-      { value: 2, label: '否' },
+      { value: 2, label: '全部' },
+      { value: 1, label: '启用' },
+      { value: 0, label: '禁用' },
     ],
   },
   {
     type: 'select',
     label: '是否到期：',
-    prop: 'expired',
+    prop: 'expire',
     placeholder: '请选择是否到期',
     opts: [
       { value: 0, label: '全部' },
-      { value: 1, label: '已到期' },
-      { value: 2, label: '未到期' },
+      { value: 1, label: '未到期' },
+      { value: 2, label: '已到期' },
     ],
   },
 ])
@@ -230,27 +225,26 @@ const columns = ref([
   { prop: 'tenantName', label: '运营商' },
   { prop: 'companyName', label: '局点名称' },
   { prop: 'username', label: '用户账号' },
-  { prop: 'realName', label: '用户名称' },
-  { prop: 'roleName', label: '角色名称' },
-  { 
-    prop: 'marketingGroupNames', 
-    label: '营销组', 
+  { prop: 'name', label: '用户名称' },
+  {
+    prop: 'roleNames',
+    label: '角色名称',
     showOverflowTooltip: true,
-    formatter: (row: unknown) => {
-      const accountRow = row as Account;
-      if (Array.isArray(accountRow.marketingGroupNames)) {
-        return accountRow.marketingGroupNames.join(', ');
-      }
-      return accountRow.marketingGroupNames || '';
-    }
+    formatter: (row: Account) => row.roleNames?.join(', ') || '',
   },
-  { prop: 'enabled', label: '是否启用', slot: 'enabled' },
-  { prop: 'expireDate', label: '有效期至' },
-  { prop: 'expired', label: '是否到期', slot: 'expired' },
-  { prop: 'creator', label: '创建人' },
+  {
+    prop: 'groupNames',
+    label: '营销组',
+    showOverflowTooltip: true,
+    formatter: (row: Account) => row.groupNames?.join(', ') || '',
+  },
+  { prop: 'status', label: '状态', slot: 'status' },
+  { prop: 'effectiveDay', label: '有效期至' },
+  { prop: 'expire', label: '是否到期', slot: 'expire' },
+  { prop: 'operatorName', label: '创建人' },
   { prop: 'createTime', label: '创建时间' },
   { prop: 'updateTime', label: '更新时间' },
-  { prop: 'operator', label: '操作', fixed: 'right', slot: 'operator' },
+  { prop: 'operator', label: '操作', fixed: 'right', slot: 'operator', width: 300 },
 ])
 
 // 更新CompanySelect组件的tenantId
@@ -265,7 +259,7 @@ const updateCompanySelectTenantId = (tenantId: number | string): void => {
 // 更新MarketingGroupMultiSelect组件的companyId
 const updateMarketingGroupSelectCompanyId = (companyId: number | string): void => {
   // 更新搜索表单中的MarketingGroupMultiSelect组件
-  const marketingGroupOption = searchOpt.value.find((opt) => opt.prop === 'marketingGroups')
+  const marketingGroupOption = searchOpt.value.find((opt) => opt.prop === 'groupIds')
   if (marketingGroupOption?.props) {
     marketingGroupOption.props.companyId = companyId
   }
@@ -281,13 +275,14 @@ const getData = async (): Promise<void> => {
     const params: AccountQuery = {
       tenantId: formValues.tenantId ? Number(formValues.tenantId) : undefined,
       companyId: formValues.companyId ? Number(formValues.companyId) : undefined,
-      marketingGroups: formValues.marketingGroups && formValues.marketingGroups.length > 0
-        ? formValues.marketingGroups.map((id: number | string) => Number(id))
-        : undefined,
+      groupIds:
+        formValues.groupIds && formValues.groupIds.length > 0
+          ? formValues.groupIds.map((id: number | string) => Number(id))
+          : undefined,
       username: formValues.username || undefined,
-      realName: formValues.realName || undefined,
-      enabled: formValues.enabled === 0 ? undefined : formValues.enabled === 1 ? true : false,
-      expired: formValues.expired === 0 ? undefined : formValues.expired === 1 ? true : false,
+      name: formValues.name || undefined,
+      status: formValues.status === 2 ? undefined : formValues.status,
+      expire: formValues.expire === 0 ? undefined : formValues.expire === 1 ? 1 : 0,
       pageNo: page.index,
       pageSize: page.size,
     }
@@ -321,38 +316,21 @@ const resetPagination = (): void => {
 
 // 重置查询条件
 const resetQuery = (): void => {
-  query.tenantId = ''
-  query.companyId = ''
-  query.marketingGroups = []
+  query.tenantId = 0
+  query.companyId = 0
+  query.groupIds = []
   query.username = ''
-  query.realName = ''
-  query.enabled = 0
-  query.expired = 0
+  query.name = ''
+  query.status = 2
+  query.expire = 0
 
   // 更新CompanySelect组件的tenantId
-  updateCompanySelectTenantId('')
+  updateCompanySelectTenantId(0)
 
   // 更新MarketingGroupMultiSelect组件的companyId
-  updateMarketingGroupSelectCompanyId('')
+  updateMarketingGroupSelectCompanyId(0)
 
   searchFormKey.value += 1
-  resetPagination()
-  getData()
-}
-
-// 执行查询
-const handleSearch = (searchQuery?: Record<string, unknown>): void => {
-  if (searchQuery) {
-    // 使用从搜索组件接收的查询参数
-    query.tenantId = (searchQuery.tenantId as string) || ''
-    query.companyId = (searchQuery.companyId as string) || ''
-    query.marketingGroups = (searchQuery.marketingGroups as Array<number | string>) || []
-    query.username = (searchQuery.username as string) || ''
-    query.realName = (searchQuery.realName as string) || ''
-    query.enabled = searchQuery.enabled !== undefined ? Number(searchQuery.enabled) : 0
-    query.expired = searchQuery.expired !== undefined ? Number(searchQuery.expired) : 0
-  }
-
   resetPagination()
   getData()
 }
@@ -369,20 +347,8 @@ const handleQueryUpdate = (newQuery: Record<string, unknown>): void => {
     // 标记正在更新
     isUpdatingProps = true
 
-    // 将新的查询条件同步到本地，需要对enabled和expired做类型转换
-    if (newQuery.enabled !== undefined) {
-      query.enabled = Number(newQuery.enabled)
-    }
-    if (newQuery.expired !== undefined) {
-      query.expired = Number(newQuery.expired)
-    }
-
-    // 其他属性直接复制
-    if (newQuery.tenantId !== undefined) query.tenantId = newQuery.tenantId as string
-    if (newQuery.companyId !== undefined) query.companyId = newQuery.companyId as string
-    if (newQuery.marketingGroups !== undefined) query.marketingGroups = newQuery.marketingGroups as Array<number | string>
-    if (newQuery.username !== undefined) query.username = newQuery.username as string
-    if (newQuery.realName !== undefined) query.realName = newQuery.realName as string
+    // 更新查询条件
+    Object.assign(query, newQuery)
 
     // 更新CompanySelect组件的tenantId
     if (newQuery.tenantId !== undefined && newQuery.tenantId !== oldTenantId) {
@@ -390,7 +356,7 @@ const handleQueryUpdate = (newQuery: Record<string, unknown>): void => {
 
       // 如果运营商变化，清空局点和营销组
       if (query.companyId) query.companyId = ''
-      if (query.marketingGroups && query.marketingGroups.length > 0) query.marketingGroups = []
+      if (query.groupIds && query.groupIds.length > 0) query.groupIds = []
 
       // 清空营销组选择器的companyId
       updateMarketingGroupSelectCompanyId('')
@@ -401,8 +367,8 @@ const handleQueryUpdate = (newQuery: Record<string, unknown>): void => {
       updateMarketingGroupSelectCompanyId(newQuery.companyId as string | number)
 
       // 如果局点变化，清空营销组
-      if (query.marketingGroups && query.marketingGroups.length > 0) {
-        query.marketingGroups = []
+      if (query.groupIds && query.groupIds.length > 0) {
+        query.groupIds = []
       }
     }
   } finally {
@@ -411,6 +377,17 @@ const handleQueryUpdate = (newQuery: Record<string, unknown>): void => {
       isUpdatingProps = false
     }, 0)
   }
+}
+
+// 执行查询
+const handleSearch = (searchQuery?: Record<string, unknown>): void => {
+  if (searchQuery) {
+    // 使用从搜索组件接收的查询参数
+    Object.assign(query, searchQuery)
+  }
+
+  resetPagination()
+  getData()
 }
 
 // 页码变化
@@ -433,51 +410,49 @@ const handleAdd = (): void => {
 
 // 编辑账号
 const handleEdit = (row: Account): void => {
-  const accountData = {
+  const formData = {
     id: row.id,
     tenantId: row.tenantId,
     companyId: row.companyId,
-    marketingGroups: row.marketingGroups || [],
-    marketingGroupNames: row.marketingGroupNames || [],
     username: row.username,
-    realName: row.realName,
-    roleId: row.roleId,
-    enabled: row.enabled,
-    expireDate: row.expireDate,
+    name: row.name,
+    roleIds: row.roleIds,
+    status: row.status,
+    effectiveDay: row.effectiveDay,
+    groupIds: row.groupIds,
   }
 
   // 通过路由参数传递数据
   router.push({
     path: `/edit-account/${row.id}`,
     query: {
-      data: encodeURIComponent(JSON.stringify(accountData))
-    }
+      data: encodeURIComponent(JSON.stringify(formData)),
+    },
   })
 }
 
-// 通用操作按钮处理函数
-const handleOperate = (action: string, row: Account): void => {
-  if (action === 'edit') {
-    handleEdit(row)
-  } else if (action === 'delete') {
-    handleDelete(row)
-  }
+// 添加角色配置处理函数
+const handleConfigRole = (row: Account): void => {
+  router.push(`/configAccountRole/${row.id}`)
 }
 
-// 删除账号
-const handleDelete = async (row: Account): Promise<void> => {
+// 处理状态变更
+const handleStatusChange = async (row: Account): Promise<void> => {
   try {
     loading.value = true
-    const res = await deleteAccount(row.id)
+    const res = await updateAccountStatus(row.id, row.status)
     if (res.code === '00000') {
-      ElMessage.success('删除成功')
-      getData()
+      ElMessage.success(row.status === 1 ? '启用成功' : '禁用成功')
     } else {
-      ElMessage.error(res.msg || '删除失败')
+      // 如果更新失败，恢复原状态
+      row.status = row.status === 1 ? 0 : 1
+      ElMessage.error(res.msg || '状态更新失败')
     }
   } catch (error) {
-    console.error('删除出错:', error)
-    ElMessage.error('删除失败')
+    console.error('状态更新失败:', error)
+    // 发生错误时恢复原状态
+    row.status = row.status === 1 ? 0 : 1
+    ElMessage.error('状态更新失败')
   } finally {
     loading.value = false
   }
